@@ -108,7 +108,6 @@ int count_rows(FILE *file)
     {
         count++;
     }
-
     rewind(file); // נחזור להתחלה למקרה שהקובץ ייקרא שוב
     return count;
 }

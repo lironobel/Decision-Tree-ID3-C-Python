@@ -9,7 +9,8 @@
 
 #define MAX_LINE_LENGTH 1024
 #define MAX_UNIQUE_VALUES 1000
-#define MAX_COLUMN_COUNT 32
+#define MAX_COLUMN_COUNT 100
+#define MAX_TEMP_FILENAME_LENGTH 100
 
 // פונקציה לפתיחת קובץ
 void open_file_for_reading(FILE **file, const char *filename)
@@ -283,10 +284,10 @@ void count_rows_for_each_class(FILE *file, int *class_counts, char **list_classe
     rewind(file);
 }
 
-// פונקציה ליצירת קובץ טקסט חדש
 FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_value, int keep_if_match, const char *temp_filename, int is_numeric)
 {
     rewind(file);
+
     FILE *temp_file = fopen(temp_filename, "w");
     if (!temp_file)
     {
@@ -297,18 +298,21 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
     char line[MAX_LINE_LENGTH];
     if (fgets(line, sizeof(line), file))
     {
-        fputs(line, temp_file);
+        fputs(line, temp_file); // כתיבת שורת כותרת
     }
 
     while (fgets(line, sizeof(line), file))
     {
+        char original_line[MAX_LINE_LENGTH];
+        strcpy(original_line, line);
+
         char line_copy[MAX_LINE_LENGTH];
         strcpy(line_copy, line);
 
         char *tokens[MAX_COLUMN_COUNT];
         int col = 0;
-
         char *token = strtok(line_copy, ",");
+
         while (token && col < MAX_COLUMN_COUNT)
         {
             tokens[col++] = token;
@@ -322,9 +326,12 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
         value[strcspn(value, "\n\r")] = '\0';
 
         int match = 0;
+
         if (is_numeric)
         {
-            match = atof(value) <= atof(match_value);
+            double val = atof(value);
+            double threshold = atof(match_value);
+            match = val <= threshold;
         }
         else
         {
@@ -333,7 +340,7 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
 
         if ((match && keep_if_match) || (!match && !keep_if_match))
         {
-            fputs(line, temp_file);
+            fputs(original_line, temp_file);
         }
     }
 

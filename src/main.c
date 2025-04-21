@@ -13,7 +13,7 @@ int main()
 {
     // פתיחת הקובץ
     FILE *file = NULL;
-    open_file_for_reading(&file, "data/iris.csv"); // פותח את הקובץ לקריאה
+    open_file_for_reading(&file, "data/adult.csv"); // פותח את הקובץ לקריאה
 
     int column_count = 0;
     // קריאה לפונקציה שמחזירה את המערך של השמות של העמודות
@@ -90,8 +90,17 @@ int main()
     FILE *left = create_temp_csv_filtered(file, maxmaxinfoINDEX, best_split_values[maxmaxinfoINDEX], 1, left_filename, is_numeric);
     FILE *right = create_temp_csv_filtered(file, maxmaxinfoINDEX, best_split_values[maxmaxinfoINDEX], 0, right_filename, is_numeric);
 
+    fclose(left);
+    fclose(right);
+
+    // פתח מחדש לקריאה
+    left = fopen(left_filename, "r");
+    right = fopen(right_filename, "r");
+
     printf("Left rows for the first split: %d\n", count_rows(left));
     printf("Right rows for the first split: %d\n", count_rows(right));
+
+    rewind(left);
 
     // שחרור זיכרון
     fclose(file);
