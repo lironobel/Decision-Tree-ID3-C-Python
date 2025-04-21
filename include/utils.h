@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 // פונקצייה שמקבלת מחרוזת ומסירה ממנה רווחים מיותרים
-void trim_inplace(char *str);
+char *trim(char *str);
 
 // פונקצייה שמקבלת מערך של מספרים ומחזירה את האנטרופיה של המערך
 double entropy(int *classes, int num_classes);

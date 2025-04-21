@@ -37,8 +37,8 @@ void calculate_categorical_thresholds(FILE *file, int column_index, double *best
             col++;
         }
 
-        trim_inplace(category);
-        trim_inplace(class_val);
+        trim(category);
+        trim(class_val);
 
         int exists = 0;
         for (int i = 0; i < num_categories; i++)
@@ -82,8 +82,8 @@ void calculate_categorical_thresholds(FILE *file, int column_index, double *best
                 col++;
             }
 
-            trim_inplace(category);
-            trim_inplace(class_val);
+            trim(category);
+            trim(class_val);
 
             for (int j = 0; j < class_count; j++)
             {
@@ -204,7 +204,7 @@ void split_by_numeric_threshold(FILE *file, int column_index, double threshold, 
         if (class_value)
         {
             class_value = class_value + 1;
-            trim_inplace(class_value);
+            trim(class_value);
 
             for (int i = 0; i < class_count; i++)
             {

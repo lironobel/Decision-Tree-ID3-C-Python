@@ -192,7 +192,7 @@ char **count_classes(FILE *file, int *class_count, int *total_rows)
 
         if (class_value != NULL)
         {
-            trim_inplace(class_value);
+            trim(class_value);
 
             // בדוק אם המחלקה כבר קיימת ברשימה
             int found = 0;
@@ -269,7 +269,7 @@ void count_rows_for_each_class(FILE *file, int *class_counts, char **list_classe
 
         if (class_value != NULL)
         {
-            trim_inplace(class_value);
+            trim(class_value);
 
             for (int j = 0; j < class_count; j++)
             {
@@ -335,7 +335,11 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
         }
         else
         {
-            match = strcmp(value, match_value) == 0;
+            char match_copy[256]; // גודל מספיק גדול כדי להכיל את המחרוזת
+            strncpy(match_copy, match_value, sizeof(match_copy));
+            match_copy[sizeof(match_copy) - 1] = '\0'; // ליתר ביטחון
+
+            match = strcmp(trim(value), trim(match_copy)) == 0;
         }
 
         if ((match && keep_if_match) || (!match && !keep_if_match))

@@ -7,9 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include "utils.h"
-
-// פונקציה לנקות רווחים מיותרים בתחילת ובסוף המילה
-void trim_inplace(char *str)
+char *trim(char *str)
 {
     char *start = str;
     while (*start == ' ')
@@ -21,6 +19,8 @@ void trim_inplace(char *str)
 
     *(end + 1) = '\0';
     memmove(str, start, strlen(start) + 1); // הזזה קדימה לתוך str המקורי
+
+    return str;
 }
 
 // פונקצייה שמחשבת את האנטרופיה של מחלקה מסוימת
