@@ -1,0 +1,10 @@
+CC = gcc
+CFLAGS = -Wall -Wextra -Iinclude
+SRC = src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c
+OUT = build/decision_tree.exe
+
+all:
+	$(CC) $(CFLAGS) $(SRC) -o $(OUT)
+
+clean:
+	del /Q build\\*.exe
