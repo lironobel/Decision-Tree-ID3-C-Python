@@ -283,22 +283,21 @@ void count_rows_for_each_class(FILE *file, int *class_counts, char **list_classe
     rewind(file);
 }
 
-// פונקציה שמקבלת קובץ ומחזירה קובץ מסונן לפי תצפיות
+// פונקציה ליצירת קובץ טקסט חדש
 FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_value, int keep_if_match, const char *temp_filename, int is_numeric)
 {
     rewind(file);
     FILE *temp_file = fopen(temp_filename, "w");
     if (!temp_file)
     {
-        printf("Failed to create temp file.\n");
+        printf("Failed to create temp file: %s\n", temp_filename);
         return NULL;
     }
 
     char line[MAX_LINE_LENGTH];
-    // העתקת שורת הכותרת
     if (fgets(line, sizeof(line), file))
     {
-        fprintf(temp_file, "%s", line);
+        fputs(line, temp_file);
     }
 
     while (fgets(line, sizeof(line), file))
@@ -306,38 +305,39 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
         char line_copy[MAX_LINE_LENGTH];
         strcpy(line_copy, line);
 
-        char *token;
         char *tokens[MAX_COLUMN_COUNT];
-        int token_index = 0;
+        int col = 0;
 
-        token = strtok(line_copy, ",");
-        while (token != NULL && token_index < MAX_COLUMN_COUNT)
+        char *token = strtok(line_copy, ",");
+        while (token && col < MAX_COLUMN_COUNT)
         {
-            tokens[token_index++] = token;
+            tokens[col++] = token;
             token = strtok(NULL, ",");
         }
 
-        if (token_index <= column_index)
+        if (col <= column_index)
             continue;
 
-        int is_match = 0;
+        char *value = tokens[column_index];
+        value[strcspn(value, "\n\r")] = '\0';
+
+        int match = 0;
         if (is_numeric)
         {
-            double val = atof(tokens[column_index]);
-            double threshold = atof(match_value);
-            is_match = val < threshold;
+            match = atof(value) <= atof(match_value);
         }
         else
         {
-            is_match = strcmp(tokens[column_index], match_value) == 0;
+            match = strcmp(value, match_value) == 0;
         }
 
-        if ((keep_if_match && is_match) || (!keep_if_match && !is_match))
+        if ((match && keep_if_match) || (!match && !keep_if_match))
         {
-            fprintf(temp_file, "%s", line);
+            fputs(line, temp_file);
         }
     }
 
+    fflush(temp_file);
     rewind(temp_file);
     return temp_file;
 }
