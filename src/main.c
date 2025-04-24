@@ -13,7 +13,7 @@ int main()
 {
     // פתיחת הקובץ
     FILE *file = NULL;
-    open_file_for_reading(&file, "data/adult.csv"); // פותח את הקובץ לקריאה
+    open_file_for_reading(&file, "data\\adult.csv"); // פותח את הקובץ לקריאה
 
     int column_count = 0;
     // קריאה לפונקציה שמחזירה את המערך של השמות של העמודות
