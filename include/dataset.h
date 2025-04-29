@@ -23,4 +23,7 @@ void count_rows_for_each_class(FILE *file, int *class_counts, char **list_classe
 // פונקצייה שיוצרת קובץ מסונן לפי תצפיות
 FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_value, int keep_if_match, const char *temp_filename, int is_numeric);
 
+bool is_pure_file
+
+
 #endif

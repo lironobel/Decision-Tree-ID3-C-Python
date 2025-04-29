@@ -24,8 +24,9 @@ int main()
     int total_rows = 0;  // מספר השורות בקובץ
 
     // קריאה לפונקציה שמחזירה את המערך של השמות של המחלקות
+    int class_count = 0;
     char **list_classes = count_classes(file, &class_count, &total_rows);
-
+    
     // יצירת מערך שיעקוב אחרי מספר התצפיות עבור כל מחלקה
     int *class_counts_for_each_class = (int *)calloc(class_count, sizeof(int));
 
