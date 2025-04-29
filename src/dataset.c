@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include "dataset.h"
 #include "utils.h"
+#include "build_tree.h"
 
 #define MAX_LINE_LENGTH 1024
 #define MAX_UNIQUE_VALUES 1000

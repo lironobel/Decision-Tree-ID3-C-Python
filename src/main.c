@@ -11,6 +11,10 @@
 
 int main()
 {
+    double total_ig = 0.0;
+    int ig_count = 0;
+    //פיצול ראשון בלבד
+    /*
     // פתיחת הקובץ
     FILE *file = NULL;
     open_file_for_reading(&file, "data\\adult.csv"); // פותח את הקובץ לקריאה
@@ -66,6 +70,8 @@ int main()
     printf("\n[INFO] Best Gain Overall: Column %s with Gain %.6f\n", feature_vector[maxmaxinfoINDEX], maxmaxinfo);
     print_unique_values_in_column(file, maxmaxinfoINDEX);                          // הדפסת הערכים  בעמודה
     printf("\n[INFO] Best Split Value: %s\n", best_split_values[maxmaxinfoINDEX]); // הדפסת ערך הסף הטוב ביותר  => זה יהיה הערך שאיתו נבצע את הפיצול
+    total_ig += maxmaxinfo;
+    ig_count++;
 
     // יצירת קבצים זמניים עבור הפיצול
     // הכנת השמות של הקבצים
@@ -87,7 +93,7 @@ int main()
 
     // יצירת הקבצים
     int is_numeric = check_if_column_contains_numbers(file, maxmaxinfoINDEX);
-
+    
     FILE *left = create_temp_csv_filtered(file, maxmaxinfoINDEX, best_split_values[maxmaxinfoINDEX], 1, left_filename, is_numeric);
     FILE *right = create_temp_csv_filtered(file, maxmaxinfoINDEX, best_split_values[maxmaxinfoINDEX], 0, right_filename, is_numeric);
 
@@ -125,6 +131,9 @@ int main()
 
     free(class_counts_for_each_class);
     free(best_gain_for_each_column);
-
+    */
+    
+    // בניית עץ החלטה
+    
     return 0;
 }

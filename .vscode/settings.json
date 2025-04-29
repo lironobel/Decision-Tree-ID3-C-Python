@@ -1,6 +1,7 @@
 {
   "files.associations": {
-    "stdlib.h": "c"
+    "stdlib.h": "c",
+    "infogain.h": "c"
   },
   "C_Cpp.errorSquiggles": "enabled",
   "C_Cpp.default.compilerPath": "C:/MinGW/bin/gcc.exe",
