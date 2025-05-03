@@ -228,79 +228,91 @@ void split_by_numeric_threshold(FILE *file, int column_index, double threshold, 
     rewind(file);
 }
 
-void find_best_infogain(FILE *file, int column_count, int total_rows, double *best_gain_for_each_column, double base_entropy, int class_count, char **list_classes, double *maxmaxinfo, int *maxmaxinfoINDEX, char **best_split_values)
+
+
+SplitResult find_best_infogain(FILE *file, int column_count, int total_rows,
+    double base_entropy, int class_count, char **list_classes){
+rewind(file);
+printf("\n[INFO] Calculating Information Gain for %d columns...\n", column_count);
+
+SplitResult best_split = {.gain = 0.0, .column_index = -1, .value = NULL, .is_numeric = 0};
+
+for (int i = 0; i < column_count; i++)
 {
-    rewind(file);
-    printf("\n[INFO] Calculating Information Gain for %d columns...\n", column_count);
-    rewind(file);
+printf("\n>> Column %d: ", i);
+int is_numeric = check_if_column_contains_numbers(file, i);
+double max_gain = 0.0;
+char buffer[32] = {0};
 
-    for (int i = 0; i < column_count; i++)
-    {
-        printf("\n>> Column %d: ", i);
-        int is_numeric = check_if_column_contains_numbers(file, i);
-        double max_gain = 0.0;
+if (is_numeric)
+{
+printf("numeric\n");
+double *thresholds = malloc((total_rows - 1) * sizeof(double));
+int threshold_count = 0;
+double best_threshold = 0.0;
 
-        if (is_numeric)
-        {
-            printf("numeric\n");
-            double *thresholds = malloc((total_rows - 1) * sizeof(double));
-            int threshold_count = 0;
-            double best_threshold = 0.0;
+calculate_numeric_thresholds(file, i, thresholds, &threshold_count, total_rows);
 
-            calculate_numeric_thresholds(file, i, thresholds, &threshold_count, total_rows);
+for (int j = 0; j < threshold_count; j += 50)
+{
+int *left_counts = calloc(class_count, sizeof(int));
+int *right_counts = calloc(class_count, sizeof(int));
+int total_left = 0, total_right = 0;
 
-            for (int j = 0; j < threshold_count; j += 50)
-            {
-                int *left_counts = calloc(class_count, sizeof(int));
-                int *right_counts = calloc(class_count, sizeof(int));
-                int total_left = 0, total_right = 0;
+split_by_numeric_threshold(file, i, thresholds[j], list_classes, class_count,
+                left_counts, right_counts, &total_left, &total_right);
 
-                split_by_numeric_threshold(file, i, thresholds[j], list_classes, class_count,
-                                           left_counts, right_counts, &total_left, &total_right);
+double H_left = entropy(left_counts, class_count);
+double H_right = entropy(right_counts, class_count);
 
-                double H_left = entropy(left_counts, class_count);
-                double H_right = entropy(right_counts, class_count);
+double gain = base_entropy - ((total_left * H_left + total_right * H_right) / (double)total_rows);
 
-                double gain = base_entropy - ((total_left * H_left + total_right * H_right) / (double)total_rows);
+if (gain > max_gain)
+{
+max_gain = gain;
+best_threshold = thresholds[j];
+}
 
-                if (gain > max_gain)
-                {
-                    max_gain = gain;
-                    best_threshold = thresholds[j];
-                }
+free(left_counts);
+free(right_counts);
+}
 
-                free(left_counts);
-                free(right_counts);
-            }
+sprintf(buffer, "%.6f", best_threshold);
+if (max_gain > best_split.gain)
+{
+best_split.gain = max_gain;
+best_split.column_index = i;
+best_split.value = strdup(buffer);
+best_split.is_numeric = 1;
+}
 
-            char buffer[32];
-            sprintf(buffer, "%.6f", best_threshold);
-            best_split_values[i] = strdup(buffer);
+free(thresholds);
+}
+else
+{
+printf("categorical\n");
+double gain = 0.0;
+char *best_category = NULL;
+calculate_categorical_thresholds(file, i, &gain, total_rows,
+                  list_classes, class_count,
+                  base_entropy, &best_category);
 
-            free(thresholds);
-        }
-        else
-        {
-            printf("categorical\n");
-            double gain = 0.0;
-            char *best_category = NULL;
-            calculate_categorical_thresholds(file, i, &gain, total_rows,
-                                             list_classes, class_count,
-                                             base_entropy, &best_category);
-            max_gain = gain;
-            best_split_values[i] = strdup(best_category);
-            free(best_category);
-        }
+if (gain > best_split.gain)
+{
+best_split.gain = gain;
+best_split.column_index = i;
+best_split.value = strdup(best_category);
+best_split.is_numeric = 0;
+}
 
-        if (max_gain > *maxmaxinfo)
-        {
-            *maxmaxinfo = max_gain;
-            *maxmaxinfoINDEX = i;
-        }
+free(best_category);
+}
 
-        best_gain_for_each_column[i] = max_gain;
-        printf("[Done] Best Gain for Column %d: %.6f\n", i, max_gain);
-    }
-    rewind(file);
-    printf("\n[INFO] Finished Information Gain calculation.\n");
+printf("[Done] Best Gain for Column %d: %.6f\n", i, max_gain);
+}
+
+rewind(file);
+printf("\n[INFO] Finished Information Gain calculation.\n");
+free(best_split.value);
+return best_split;
 }

@@ -9,8 +9,10 @@ int global_ig_count = 0;    // משתנה גלובלי לשמירת כמות ה-
 void build_tree(Node *node, const char *csv_path) {  // 
     int class_count1 = 0, total_rows = 0;
     char **unique_classes = count_classes(csv_path, &class_count1, &total_rows);// כך נשנה את הערך של המשתנה שסופר כמה מחלקות שונות יש בקובץ בשביל התנאי עצירה הראשון
+    
+    //תנאי עצירה ראשון
+    // אם יש רק מחלקה אחת, ניצור צומת עלה
     if (class_count1 == 1) { 
-    // אם יש רק מחלקה אחת, זהו עלה
         node->is_leaf = 1;
         node->num_classes = 1; // מספר המחלקות הוא 1
         node->labels = malloc(sizeof(int)); // הקצה זיכרון למערך של מחלקות
@@ -22,14 +24,18 @@ void build_tree(Node *node, const char *csv_path) {  //
         free(unique_classes);
         return;
     }
+
+    //תנאי עצירה שני
+    //ניצור צומת עלה אם הרווח מידע של הקובץ נמוך מידי ולא כדאי להמשיך עוד פיצול
+    
+
+
+
     // במקרה שלא נעצרים, נמשיך הלאה — עדיין צריך לשחרר את unique_classes
     for (int i = 0; i < class_count1; i++) {
         free(unique_classes[i]);
     }
     free(unique_classes);
-
-    
-
 }
 
 
