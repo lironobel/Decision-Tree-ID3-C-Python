@@ -4,16 +4,6 @@
 #include <stdlib.h>
 #include "tree.h"
 
-typedef struct Node
-{
-    int feature_index; // מספר התכונה
-    float threshold;   // סף
-    int is_leaf;       // האם עלה?
-    int *labels;       // מספר הדוגמאות בכל מחלקה
-    int num_classes;   // מספר המחלקות
-    struct Node *left;
-    struct Node *right;
-} Node;
 
 Node *create_node(int is_leaf, int *labels, int num_classes, int feature_index, float threshold)
 {
@@ -31,4 +21,20 @@ Node *create_node(int is_leaf, int *labels, int num_classes, int feature_index, 
     node->left = NULL;
     node->right = NULL;
     return node;
+}
+
+void free_tree(Node *node) {// שחרור זיכרון של עץ ההחלטה
+    if (node == NULL)
+        return;
+
+    // שחרר קודם את תתי-העצים
+    free_tree(node->left);
+    free_tree(node->right);
+
+    // שחרר את מערך התוויות אם קיים
+    if (node->labels != NULL)
+        free(node->labels);
+
+    // שחרר את הצומת עצמו
+    free(node);
 }

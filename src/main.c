@@ -11,8 +11,7 @@
 
 int main()
 {
-    double total_ig = 0.0;
-    int ig_count = 0;
+    
     //פיצול ראשון בלבד
     /*
     // פתיחת הקובץ
