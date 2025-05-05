@@ -17,9 +17,6 @@ typedef struct Node
 // יצירת צומת חדש בעץ
 Node *create_node(int is_leaf, int *labels, int num_classes, int feature_index, float threshold);
 
-// בניית עץ ההחלטה (אם אתה משתמש בפונקציה הזו מחוץ ל-tree.c)
-void build_tree(Node *node, const char *csv_path);
-
 void free_tree(Node *node);
 
 #endif // TREE_H
