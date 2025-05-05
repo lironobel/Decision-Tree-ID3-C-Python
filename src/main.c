@@ -133,6 +133,7 @@ int main()
     free(best_gain_for_each_column);
     */
     
+    printf("Building decision tree...\n");
     // בניית עץ החלטה
   FILE *f = fopen("iris.csv", "r");
     if (!f) {
@@ -141,7 +142,9 @@ int main()
     }
 
     Node *root = NULL;
-    build_tree(root, f);
+    build_tree(&root, f); // העברת כתובת
+
     fclose(f);
     return 0;
+    
 }
