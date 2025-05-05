@@ -7,7 +7,8 @@
 #include "dataset.h"
 #include "infogain.h"
 #include "utils.h"
-#include "tree.h" // Ensure this header defines TreeNode
+#include "tree.h" 
+#include "build_tree.h"
 
 int main()
 {
@@ -133,7 +134,14 @@ int main()
     */
     
     // בניית עץ החלטה
-    build_tree(NULL, "data\\adult.csv"); // בונה את העץ
+  FILE *f = fopen("iris.csv", "r");
+    if (!f) {
+      perror("Failed to open data.csv");
+      return 1;
+    }
+
+    Node *root = NULL;
+    build_tree(root, f);
+    fclose(f);
     return 0;
-    
 }

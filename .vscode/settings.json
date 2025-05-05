@@ -3,7 +3,8 @@
     "stdlib.h": "c",
     "infogain.h": "c",
     "dataset.h": "c",
-    "tree.h": "c"
+    "tree.h": "c",
+    "build_tree.h": "c"
   },
   "C_Cpp.errorSquiggles": "enabled",
   "C_Cpp.default.compilerPath": "C:/MinGW/bin/gcc.exe",
