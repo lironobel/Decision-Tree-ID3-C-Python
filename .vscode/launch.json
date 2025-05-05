@@ -3,14 +3,23 @@
   "configurations": [
     {
       "name": "Run Decision Tree",
-      "type": "cppvsdbg",
+      "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/decision_tree.exe",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],
-      "console": "externalTerminal"
+      "externalConsole": true,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/mingw/bin/gdb.exe",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
     },
     {
       "name": "C/C++ Runner: Debug Session",
@@ -19,8 +28,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/shayn/OneDrive/מסמכים/GitHub/Final-project-14",
-      "program": "c:/Users/shayn/OneDrive/מסמכים/GitHub/Final-project-14/build/Debug/outDebug",
+      "cwd": "c:/Users/liron/Desktop/פרוייקט יד/VScode/Project/פרוייקט",
+      "program": "c:/Users/liron/Desktop/פרוייקט יד/VScode/Project/פרוייקט/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
