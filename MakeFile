@@ -1,10 +1,11 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -Iinclude
-SRC = src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c
+CFLAGS = -Wall -Wextra -g3 -Iinclude
+SRC = src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c src/build_tree.c
 OUT = build/decision_tree.exe
 
 all:
+	@if not exist build mkdir build
 	$(CC) $(CFLAGS) $(SRC) -o $(OUT)
 
 clean:
-	del /Q build\\*.exe
+	@if exist build\*.exe del /Q build\*.exe

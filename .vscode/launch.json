@@ -28,8 +28,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/liron/Desktop/פרוייקט יד/VScode/Project/פרוייקט",
-      "program": "c:/Users/liron/Desktop/פרוייקט יד/VScode/Project/פרוייקט/build/Debug/outDebug",
+      "cwd": "c:/Users/liron/Desktop/Final-project/VScode/Project/Final-project",
+      "program": "c:/Users/liron/Desktop/Final-project/VScode/Project/Final-project/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [

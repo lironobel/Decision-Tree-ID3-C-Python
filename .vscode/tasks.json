@@ -28,6 +28,21 @@
       },
       "problemMatcher": [],
       "detail": "Compiles the project into build/decision_tree.exe"
+    },
+    {
+      "label": "Run Decision Tree",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/decision_tree.exe",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "detail": "Runs the decision_tree.exe",
+      "dependsOn": "Build C Project",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
     }
   ]
 }

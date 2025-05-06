@@ -13,16 +13,6 @@
 #define MAX_COLUMN_COUNT 100
 #define MAX_TEMP_FILENAME_LENGTH 100
 
-// פונקציה לפתיחת קובץ
-void open_file_for_reading(FILE **file, const char *filename)
-{
-    *file = fopen(filename, "r"); // פותח את הקובץ לקריאה
-    if (!*file)
-    {
-        printf("Error opening file!!!!!!!!!!!!!!!!\n");
-        exit(1);
-    }
-}
 
 // הפונקציה הראשית שמדפיסה ערכים ייחודיים בעמודה מסוימת
 // רק אם העמודה מכילה ערכים שאינם מספרים

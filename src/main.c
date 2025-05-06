@@ -16,19 +16,21 @@ int main()
     //פיצול ראשון בלבד
     /*
     // פתיחת הקובץ
-    FILE *file = NULL;
-    open_file_for_reading(&file, "data\\adult.csv"); // פותח את הקובץ לקריאה
+    FILE *file = fopen("data\\iris.csv", "r");
+    if (!file) {
+      perror("Failed to open CSV file");
+      return 1;
+    }
 
     int column_count = 0;
     // קריאה לפונקציה שמחזירה את המערך של השמות של העמודות
     char **feature_vector = create_and_print_feature_vector(file, &column_count);
 
     // משתנים לשמירת שמות המחלקות
-    int class_count = 0; // מספר המחלקות השונות
     int total_rows = 0;  // מספר השורות בקובץ
 
     // קריאה לפונקציה שמחזירה את המערך של השמות של המחלקות
-    int class_count = 0;
+    int class_count = 0; // משתנה ששולחים לפונקצייה עם המצביע שערך שלו שומר כמה מחלקות שונות יש בקובץ
     char **list_classes = count_classes(file, &class_count, &total_rows);
     
     // יצירת מערך שיעקוב אחרי מספר התצפיות עבור כל מחלקה
@@ -55,8 +57,7 @@ int main()
         return 1;
     }
 
-    int maxmaxinfoINDEX = 0;                                                   // משתנה לשמירת העמודה עם הרווח המידע הגבוה ביותר
-    double maxmaxinfo = 0.0;                                                   // משתנה לשמירת הרווח המידע הגבוה ביותר
+    
     char **best_split_values = (char **)malloc(column_count * sizeof(char *)); // מערך לשמירת ערכי הספים הטובים ביותר עבור כל עמודה
     if (!best_split_values)                                                    // בדוק אם ההקצאה לא הצליחה
     {
@@ -66,17 +67,18 @@ int main()
     }
 
     // חישוב ה-IG עבור כל עמודה
-    find_best_infogain(file, column_count - 1, total_rows, best_gain_for_each_column, base_entropy, class_count, list_classes, &maxmaxinfo, &maxmaxinfoINDEX, best_split_values);
-    printf("\n[INFO] Best Gain Overall: Column %s with Gain %.6f\n", feature_vector[maxmaxinfoINDEX], maxmaxinfo);
+    SplitResult result = find_best_infogain(file, column_count - 1, total_rows, base_entropy, class_count, list_classes);
+    int maxmaxinfoINDEX = result.column_index;          // משתנה לשמירת העמודה עם הרווח המידע הגבוה ביותר
+    double maxmaxinfo = result.gain;          // משתנה לשמירת הרווח המידע הגבוה ביותר
+
+    printf("\n[INFO] Best Gain Overall: Column %s with Gain %.6f\n", feature_vector[maxmaxinfoINDEX], maxmaxinfo); // הדפסת העמודה עם הרווח הטוב ביותר
     print_unique_values_in_column(file, maxmaxinfoINDEX);                          // הדפסת הערכים  בעמודה
     printf("\n[INFO] Best Split Value: %s\n", best_split_values[maxmaxinfoINDEX]); // הדפסת ערך הסף הטוב ביותר  => זה יהיה הערך שאיתו נבצע את הפיצול
-    total_ig += maxmaxinfo;
-    ig_count++;
-
+    
     // יצירת קבצים זמניים עבור הפיצול
     // הכנת השמות של הקבצים
     char left_filename[100], right_filename[100]; // מקצה מקום למחרוזת
-    sprintf(left_filename, "is_%s.csv", best_split_values[maxmaxinfoINDEX]);
+    sprintf(left_filename, "is_%s.csv", best_split_values[maxmaxinfoINDEX]); // הכנת השם של הקובץ השמאלי
     sprintf(right_filename, "is_not_%s.csv", best_split_values[maxmaxinfoINDEX]);
 
     // ניקוי תווים בעייתיים בשם הקובץ
@@ -131,20 +133,25 @@ int main()
 
     free(class_counts_for_each_class);
     free(best_gain_for_each_column);
-    */
     
+    */
     printf("Building decision tree...\n");
     // בניית עץ החלטה
-  FILE *f = fopen("iris.csv", "r");
+    FILE *f = fopen("data\\iris.csv", "r");
     if (!f) {
-      perror("Failed to open data.csv");
+      perror("Failed to open CSV file");
       return 1;
     }
-
+    
     Node *root = NULL;
-    build_tree(&root, f); // העברת כתובת
+    // קריאה לפונקציה לבניית העץ
+    build_tree(&root, f); 
 
     fclose(f);
-    return 0;
+    printf("Tree built successfully!\n");
+
+    printf("\nPress Enter to exit...\n");
+    scanf("%*c"); // מחכה למשתמש ללחוץ על Enter
     
+   return 0;    
 }

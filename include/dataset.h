@@ -8,9 +8,6 @@
 // הפונקציה הראשית שמדפיסה ערכים ייחודיים בעמודה מסוימת
 void print_unique_values_in_column(FILE *file, int column_index);
 
-// פונקציה לפתיחת קובץ
-void open_file_for_reading(FILE **file, const char *filename);
-
 // פונקציה שמקבלת קובץ ומחזירה מערך של מחרוזות שמייצגות את השמות של העמודות
 char **create_and_print_feature_vector(FILE *file, int *column_count);
 
@@ -22,6 +19,5 @@ void count_rows_for_each_class(FILE *file, int *class_counts, char **list_classe
 
 // פונקצייה שיוצרת קובץ מסונן לפי תצפיות
 FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_value, int keep_if_match, const char *temp_filename, int is_numeric);
-
 
 #endif

@@ -170,6 +170,7 @@ void calculate_numeric_thresholds(FILE *file, int column_index, double *threshol
     rewind(file);
 }
 
+
 void split_by_numeric_threshold(FILE *file, int column_index, double threshold, char **list_classes, int class_count, int *left_counts, int *right_counts, int *total_left, int *total_right)
 {
     rewind(file);
@@ -229,24 +230,22 @@ void split_by_numeric_threshold(FILE *file, int column_index, double threshold, 
 }
 
 
-
+//פונקציה זו מחשבת את רווח המידע עבור עמודה מסוימת בקובץ CSV
+// היא מחזירה את התוצאה הטובה ביותר שנמצאה, כולל מספר העמודה, רווח המידע, ערך הסף והאם הוא מספרי או לא
 SplitResult find_best_infogain(FILE *file, int column_count, int total_rows,
-    double base_entropy, int class_count, char **list_classes){
+    double base_entropy, int class_count, char **list_classes){  
 rewind(file);
-printf("\n[INFO] Calculating Information Gain for %d columns...\n", column_count);
+SplitResult best_split = {.gain = 0.0, .column_index = -1, .value = NULL, .is_numeric = 0}; // אתחול התוצאה הטובה ביותר
 
-SplitResult best_split = {.gain = 0.0, .column_index = -1, .value = NULL, .is_numeric = 0};
 
 for (int i = 0; i < column_count; i++)
 {
-printf("\n>> Column %d: ", i);
 int is_numeric = check_if_column_contains_numbers(file, i);
 double max_gain = 0.0;
 char buffer[32] = {0};
 
 if (is_numeric)
 {
-printf("numeric\n");
 double *thresholds = malloc((total_rows - 1) * sizeof(double));
 int threshold_count = 0;
 double best_threshold = 0.0;
@@ -290,8 +289,7 @@ free(thresholds);
 }
 else
 {
-printf("categorical\n");
-double gain = 0.0;
+double gain = 0.0; 
 char *best_category = NULL;
 calculate_categorical_thresholds(file, i, &gain, total_rows,
                   list_classes, class_count,
@@ -307,12 +305,8 @@ best_split.is_numeric = 0;
 
 free(best_category);
 }
-
-printf("[Done] Best Gain for Column %d: %.6f\n", i, max_gain);
 }
 
 rewind(file);
-printf("\n[INFO] Finished Information Gain calculation.\n");
-free(best_split.value);
 return best_split;
 }
