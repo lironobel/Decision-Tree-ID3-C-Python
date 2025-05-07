@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run Decision Tree",
+      "name": "Debug Decision Tree",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/decision_tree.exe",
@@ -13,25 +13,6 @@
       "externalConsole": true,
       "MIMode": "gdb",
       "miDebuggerPath": "C:/mingw/bin/gdb.exe",
-      "setupCommands": [
-        {
-          "description": "Enable pretty-printing for gdb",
-          "text": "-enable-pretty-printing",
-          "ignoreFailures": true
-        }
-      ]
-    },
-    {
-      "name": "C/C++ Runner: Debug Session",
-      "type": "cppdbg",
-      "request": "launch",
-      "args": [],
-      "stopAtEntry": false,
-      "externalConsole": true,
-      "cwd": "c:/Users/liron/Desktop/Final-project/VScode/Project/Final-project",
-      "program": "c:/Users/liron/Desktop/Final-project/VScode/Project/Final-project/build/Debug/outDebug",
-      "MIMode": "gdb",
-      "miDebuggerPath": "gdb",
       "setupCommands": [
         {
           "description": "Enable pretty-printing for gdb",

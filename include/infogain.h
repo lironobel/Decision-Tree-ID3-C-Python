@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 typedef struct {
-    int column_index; // מספר העמודה
+    int column_index; // מספר העמודה 
     double gain;      ;// רווח המידע    
     char *value;     // ערך הפיצול (מחרוזת או מחרוזת של מספר)
     int is_numeric;  // 1 אם מספרי, 0 אם קטגוריאלי

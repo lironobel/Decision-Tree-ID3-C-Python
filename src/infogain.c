@@ -8,6 +8,8 @@
 #include "utils.h"
 #include "dataset.h"
 
+
+// עבור כל עמודה לא מספרית מחשב את ערך ה־רווח עבור כל קטגוריה בעמודה זו 
 void calculate_categorical_thresholds(FILE *file, int column_index, double *best_gain, int total_rows, char **list_classes, int class_count, double base_entropy, char **best_category)
 {
     rewind(file);
@@ -127,6 +129,8 @@ void calculate_categorical_thresholds(FILE *file, int column_index, double *best
     rewind(file);
 }
 
+
+//אוסף את כל הערכים בעמודה מספרית ומחשב ספים אפשריים בין ערכים שונים.
 void calculate_numeric_thresholds(FILE *file, int column_index, double *thresholds, int *threshold_count, int total_rows)
 {
     rewind(file);
@@ -170,7 +174,7 @@ void calculate_numeric_thresholds(FILE *file, int column_index, double *threshol
     rewind(file);
 }
 
-
+//מחלק את הדאטה לשתי קבוצות לפי סף מספרי שנבחר, וסופר מופעים בכל קבוצה.
 void split_by_numeric_threshold(FILE *file, int column_index, double threshold, char **list_classes, int class_count, int *left_counts, int *right_counts, int *total_left, int *total_right)
 {
     rewind(file);
@@ -251,7 +255,7 @@ int threshold_count = 0;
 double best_threshold = 0.0;
 
 calculate_numeric_thresholds(file, i, thresholds, &threshold_count, total_rows);
-
+// יוצר קפיצה של 50 בין הספים האפשריים כדי לא לעבור על כולם, ככל שתהיה קפיצה קטנה יותר יהיה יותר דיוק
 for (int j = 0; j < threshold_count; j += 50)
 {
 int *left_counts = calloc(class_count, sizeof(int));
