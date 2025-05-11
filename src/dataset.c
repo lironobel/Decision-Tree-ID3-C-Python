@@ -13,7 +13,6 @@
 #define MAX_COLUMN_COUNT 100
 #define MAX_TEMP_FILENAME_LENGTH 100
 
-
 // הפונקציה הראשית שמדפיסה ערכים ייחודיים בעמודה מסוימת
 // רק אם העמודה מכילה ערכים שאינם מספרים
 void print_unique_values_in_column(FILE *file, int column_index)
@@ -274,7 +273,6 @@ void count_rows_for_each_class(FILE *file, int *class_counts, char **list_classe
     }
     rewind(file);
 }
-
 FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_value, int keep_if_match, const char *temp_filename, int is_numeric)
 {
     rewind(file);
@@ -320,15 +318,25 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
 
         if (is_numeric)
         {
-            double val = atof(value);
-            double threshold = atof(match_value);
-            match = val <= threshold;
+            char *value_trimmed = trim(value);
+            char match_copy[256];
+            strncpy(match_copy, match_value, sizeof(match_copy));
+            match_copy[sizeof(match_copy) - 1] = '\0';
+
+            double val = atof(value_trimmed);
+            double threshold = atof(trim(match_copy));
+
+            if (keep_if_match)
+                match = val <= threshold;
+            else
+                match = val > threshold;
         }
+
         else
         {
-            char match_copy[256]; // גודל מספיק גדול כדי להכיל את המחרוזת
+            char match_copy[256];
             strncpy(match_copy, match_value, sizeof(match_copy));
-            match_copy[sizeof(match_copy) - 1] = '\0'; // ליתר ביטחון
+            match_copy[sizeof(match_copy) - 1] = '\0';
 
             match = strcmp(trim(value), trim(match_copy)) == 0;
         }

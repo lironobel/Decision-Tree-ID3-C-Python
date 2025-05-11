@@ -1,5 +1,4 @@
 // רק הקריאה לפונקציות, שליטה על הזרימה
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -135,9 +134,10 @@ int main()
     printf("Base Entropy for left side: %.6f\n", base_entropyLeft);                         // הדפסת האנטרופיה של הקובץ השמאלי
 
     // חישוב ה-IG עבור כל עמודה
-    SplitResult resultRigth = find_best_infogain(right, column_count - 1, total_rowsRigth, base_entropyRigth, class_countRigth, list_classesRigth);
-    SplitResult resultLeft = find_best_infogain(left, column_count - 1, total_rowsLeft, base_entropyLeft, class_countLeft, list_classesLeft);
-
+    SplitResult resultRigth = find_best_infogain(right, column_countRigth - 1, total_rowsRigth, base_entropyRigth, class_countRigth, list_classesRigth);
+    SplitResult resultLeft = find_best_infogain(left, column_countLeft - 1, total_rowsLeft, base_entropyLeft, class_countLeft, list_classesLeft);
+    printf("[DEBUG] splitting by column %d with threshold %s\n", resultRigth.column_index, resultRigth.value);
+    printf("[DEBUG] splitting by column %d with threshold %s\n", resultLeft.column_index, resultLeft.value);
     // בדיקה האם יש פיצול אפשרי
     if (resultRigth.column_index == -1)
     {
@@ -193,8 +193,10 @@ int main()
         fclose(right_file);
 
         // יצירת קבצי פלט עבור הפיצול השמאלי
+        rewind(left);  // מחזיר את המצביע של הקובץ להתחלה
+        rewind(right); // מחזיר את המצביע של הקובץ להתחלה
         left_left = create_temp_csv_filtered(left, resultLeft.column_index, resultLeft.value, 1, left_left_filename, is_numericLeftleft);
-        left_right = create_temp_csv_filtered(right, resultLeft.column_index, resultLeft.value, 0, left_right_filename, is_numericLeftRight);
+        left_right = create_temp_csv_filtered(left, resultLeft.column_index, resultLeft.value, 0, left_right_filename, is_numericLeftRight);
 
         // הדפסת סיכום פיצול שמאלי
         if (left_left && left_right)
@@ -237,7 +239,9 @@ int main()
         fclose(right_file);
 
         // יצירת קבצי פלט לפיצול הימני
-        right_left = create_temp_csv_filtered(left, resultRigth.column_index, resultRigth.value, 1, right_left_filename, is_numericRightleft);
+        rewind(left);  // מחזיר את המצביע של הקובץ להתחלה
+        rewind(right); // מחזיר את המצביע של הקובץ להתחלה
+        right_left = create_temp_csv_filtered(right, resultRigth.column_index, resultRigth.value, 1, right_left_filename, is_numericRightleft);
         right_right = create_temp_csv_filtered(right, resultRigth.column_index, resultRigth.value, 0, right_right_filename, is_numericRightRight);
 
         // הדפסת סיכום פיצול ימני
@@ -247,8 +251,6 @@ int main()
             printf("Right rows for the right second split: %d\n", count_rows(right_right));
             fclose(right_left);
             fclose(right_right);
-            remove(right_left_filename);
-            remove(right_right_filename);
         }
     }
     else
@@ -262,6 +264,10 @@ int main()
     fclose(right);
     remove(left_filename);
     remove(right_filename);
+    remove(right_left_filename);
+    remove(right_right_filename);
+    remove(left_left_filename);
+    remove(left_right_filename);
 
     for (int i = 0; i < column_count; i++)
         free(feature_vector[i]);
