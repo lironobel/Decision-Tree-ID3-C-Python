@@ -8,8 +8,7 @@
 #include "utils.h"
 #include "dataset.h"
 
-
-// עבור כל עמודה לא מספרית מחשב את ערך ה־רווח עבור כל קטגוריה בעמודה זו 
+// עבור כל עמודה לא מספרית מחשב את ערך ה־רווח עבור כל קטגוריה בעמודה זו
 void calculate_categorical_thresholds(FILE *file, int column_index, double *best_gain, int total_rows, char **list_classes, int class_count, double base_entropy, char **best_category)
 {
     rewind(file);
@@ -129,8 +128,7 @@ void calculate_categorical_thresholds(FILE *file, int column_index, double *best
     rewind(file);
 }
 
-
-//אוסף את כל הערכים בעמודה מספרית ומחשב ספים אפשריים בין ערכים שונים.
+// אוסף את כל הערכים בעמודה מספרית ומחשב ספים אפשריים בין ערכים שונים.
 void calculate_numeric_thresholds(FILE *file, int column_index, double *thresholds, int *threshold_count, int total_rows)
 {
     rewind(file);
@@ -174,7 +172,7 @@ void calculate_numeric_thresholds(FILE *file, int column_index, double *threshol
     rewind(file);
 }
 
-//מחלק את הדאטה לשתי קבוצות לפי סף מספרי שנבחר, וסופר מופעים בכל קבוצה.
+// מחלק את הדאטה לשתי קבוצות לפי סף מספרי שנבחר, וסופר מופעים בכל קבוצה.
 void split_by_numeric_threshold(FILE *file, int column_index, double threshold, char **list_classes, int class_count, int *left_counts, int *right_counts, int *total_left, int *total_right)
 {
     rewind(file);
@@ -233,84 +231,83 @@ void split_by_numeric_threshold(FILE *file, int column_index, double threshold, 
     rewind(file);
 }
 
-
-//פונקציה זו מחשבת את רווח המידע עבור עמודה מסוימת בקובץ CSV
-// היא מחזירה את התוצאה הטובה ביותר שנמצאה, כולל מספר העמודה, רווח המידע, ערך הסף והאם הוא מספרי או לא
+// פונקציה זו מחשבת את רווח המידע עבור עמודה מסוימת בקובץ CSV
+//  היא מחזירה את התוצאה הטובה ביותר שנמצאה, כולל מספר העמודה, רווח המידע, ערך הסף והאם הוא מספרי או לא
 SplitResult find_best_infogain(FILE *file, int column_count, int total_rows,
-    double base_entropy, int class_count, char **list_classes){  
-rewind(file);
-SplitResult best_split = {.gain = 0.0, .column_index = -1, .value = NULL, .is_numeric = 0}; // אתחול התוצאה הטובה ביותר
-
-
-for (int i = 0; i < column_count; i++)
+                               double base_entropy, int class_count, char **list_classes)
 {
-int is_numeric = check_if_column_contains_numbers(file, i);
-double max_gain = 0.0;
-char buffer[32] = {0};
+    rewind(file);
+    SplitResult best_split = {.gain = 0.0, .column_index = -1, .value = NULL, .is_numeric = 0}; // אתחול התוצאה הטובה ביותר
 
-if (is_numeric)
-{
-double *thresholds = malloc((total_rows - 1) * sizeof(double));
-int threshold_count = 0;
-double best_threshold = 0.0;
+    for (int i = 0; i < column_count; i++)
+    {
+        int is_numeric = check_if_column_contains_numbers(file, i);
+        double max_gain = 0.0;
+        char buffer[32] = {0};
 
-calculate_numeric_thresholds(file, i, thresholds, &threshold_count, total_rows);
-// יוצר קפיצה של 50 בין הספים האפשריים כדי לא לעבור על כולם, ככל שתהיה קפיצה קטנה יותר יהיה יותר דיוק
-for (int j = 0; j < threshold_count; j += 50)
-{
-int *left_counts = calloc(class_count, sizeof(int));
-int *right_counts = calloc(class_count, sizeof(int));
-int total_left = 0, total_right = 0;
+        if (is_numeric)
+        {
+            double *thresholds = malloc((total_rows - 1) * sizeof(double));
+            int threshold_count = 0;
+            double best_threshold = 0.0;
 
-split_by_numeric_threshold(file, i, thresholds[j], list_classes, class_count,
-                left_counts, right_counts, &total_left, &total_right);
+            calculate_numeric_thresholds(file, i, thresholds, &threshold_count, total_rows);
+            // יוצר קפיצה של 10 בין הספים האפשריים כדי לא לעבור על כולם, ככל שתהיה קפיצה קטנה יותר יהיה יותר דיוק
+            for (int j = 0; j < threshold_count; j += 100)
+            {
+                int *left_counts = calloc(class_count, sizeof(int));
+                int *right_counts = calloc(class_count, sizeof(int));
+                int total_left = 0, total_right = 0;
 
-double H_left = entropy(left_counts, class_count);
-double H_right = entropy(right_counts, class_count);
+                split_by_numeric_threshold(file, i, thresholds[j], list_classes, class_count,
+                                           left_counts, right_counts, &total_left, &total_right);
 
-double gain = base_entropy - ((total_left * H_left + total_right * H_right) / (double)total_rows);
+                double H_left = entropy(left_counts, class_count);
+                double H_right = entropy(right_counts, class_count);
 
-if (gain > max_gain)
-{
-max_gain = gain;
-best_threshold = thresholds[j];
-}
+                double gain = base_entropy - ((total_left * H_left + total_right * H_right) / (double)total_rows);
 
-free(left_counts);
-free(right_counts);
-}
+                if (gain > max_gain)
+                {
+                    max_gain = gain;
+                    best_threshold = thresholds[j];
+                }
 
-sprintf(buffer, "%.6f", best_threshold);
-if (max_gain > best_split.gain)
-{
-best_split.gain = max_gain;
-best_split.column_index = i;
-best_split.value = strdup(buffer);
-best_split.is_numeric = 1;
-}
+                free(left_counts);
+                free(right_counts);
+            }
 
-free(thresholds);
-}
-else
-{
-double gain = 0.0; 
-char *best_category = NULL;
-calculate_categorical_thresholds(file, i, &gain, total_rows,
-                  list_classes, class_count,
-                  base_entropy, &best_category);
+            sprintf(buffer, "%.6f", best_threshold);
+            if (max_gain > best_split.gain)
+            {
+                best_split.gain = max_gain;
+                best_split.column_index = i;
+                best_split.value = strdup(buffer);
+                best_split.is_numeric = 1;
+            }
 
-if (gain > best_split.gain)
-{
-best_split.gain = gain;
-best_split.column_index = i;
-best_split.value = strdup(best_category);
-best_split.is_numeric = 0;
-}
+            free(thresholds);
+        }
+        else
+        {
+            double gain = 0.0;
+            char *best_category = NULL;
+            calculate_categorical_thresholds(file, i, &gain, total_rows,
+                                             list_classes, class_count,
+                                             base_entropy, &best_category);
 
-free(best_category);
-}
-}
+            if (gain > best_split.gain)
+            {
+                best_split.gain = gain;
+                best_split.column_index = i;
+                best_split.value = strdup(best_category);
+                best_split.is_numeric = 0;
+            }
 
-rewind(file);
-return best_split;
+            free(best_category);
+        }
+    }
+
+    rewind(file);
+    return best_split;
 }

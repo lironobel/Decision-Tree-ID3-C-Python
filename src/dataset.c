@@ -183,7 +183,6 @@ char **count_classes(FILE *file, int *class_count, int *total_rows)
         if (class_value != NULL)
         {
             trim(class_value);
-
             // בדוק אם המחלקה כבר קיימת ברשימה
             int found = 0;
             for (int i = 0; i < num_classes; i++)
@@ -194,7 +193,6 @@ char **count_classes(FILE *file, int *class_count, int *total_rows)
                     break;
                 }
             }
-
             // אם לא נמצא, הוסף את המחלקה לרשימה
             if (!found)
             {
@@ -273,6 +271,9 @@ void count_rows_for_each_class(FILE *file, int *class_counts, char **list_classe
     }
     rewind(file);
 }
+
+// פונקצייה שמקבלת קובץ
+//  ומחזירה מצביע לקובץ החדש שמכיל את השורות המסוננות
 FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_value, int keep_if_match, const char *temp_filename, int is_numeric)
 {
     rewind(file);
@@ -315,23 +316,20 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
         value[strcspn(value, "\n\r")] = '\0';
 
         int match = 0;
+        int result = 0;
 
         if (is_numeric)
         {
-            char *value_trimmed = trim(value);
-            char match_copy[256];
-            strncpy(match_copy, match_value, sizeof(match_copy));
-            match_copy[sizeof(match_copy) - 1] = '\0';
+            double val = atof(trim(value));
+            double threshold = atof(trim((char *)match_value));
 
-            double val = atof(value_trimmed);
-            double threshold = atof(trim(match_copy));
+            match = val <= threshold;
 
             if (keep_if_match)
-                match = val <= threshold;
+                result = match;
             else
-                match = val > threshold;
+                result = !match;
         }
-
         else
         {
             char match_copy[256];
@@ -339,9 +337,14 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
             match_copy[sizeof(match_copy) - 1] = '\0';
 
             match = strcmp(trim(value), trim(match_copy)) == 0;
+
+            if (keep_if_match)
+                result = match;
+            else
+                result = !match;
         }
 
-        if ((match && keep_if_match) || (!match && !keep_if_match))
+        if (result)
         {
             fputs(original_line, temp_file);
         }

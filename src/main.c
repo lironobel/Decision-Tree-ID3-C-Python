@@ -14,7 +14,7 @@ int main()
     // פיצול ראשון בלבד
 
     // פתיחת הקובץ
-    FILE *file = fopen("data\\iris.csv", "r");
+    FILE *file = fopen("data\\adult.csv", "r");
     if (!file)
     {
         printf("Failed to open CSV file ");
@@ -22,6 +22,7 @@ int main()
         return 0;
     }
     int column_count = 0;
+    printf("Total Rows: %d\n", count_rows(file));
     // קריאה לפונקציה שמחזירה את המערך של השמות של העמודות
     // על הדרך גם סופרת כמה עמודות שונות יש לנו
     // בגלל זה נשלח את המצביע של העמודות לפונקציה
@@ -100,52 +101,45 @@ int main()
     // פיצול שני
     int column_countRigth = 0;
     int column_countLeft = 0;
-    printf("\n\n[INFO] Splitting again...\n");
+    printf("\n\n[INFO] Splitting again...\n\n");
 
-    rewind(left);  // מחזיר את המצביע של הקובץ להתחלה
-    rewind(right); // מחזיר את המצביע של הקובץ להתחלה
+    rewind(left);
+    rewind(right);
 
     printf("feature_vector for right: \n");
-    char **feature_vectorForRight = create_and_print_feature_vector(right, &column_countRigth); // קריאה לפונקציה שמחזירה את המערך של השמות של העמודות פיצול ימינה
+    char **feature_vectorForRight = create_and_print_feature_vector(right, &column_countRigth);
     printf("feature_vector for left: \n");
-    char **feature_vectorForLeft = create_and_print_feature_vector(left, &column_countLeft); // קריאה לפונקציה שמחזירה את המערך של השמות של העמודות פיצול שמאלה
+    char **feature_vectorForLeft = create_and_print_feature_vector(left, &column_countLeft);
 
-    int total_rowsRigth = 0; // מספר השורות בקובץ
-    int total_rowsLeft = 0;  // מספר השורות בקובץ
-    // קריאה לפונקציה שמחזירה את המערך של השמות של המחלקות
-    int class_countRigth = 0; // משתנה ששולחים לפונקצייה עם המצביע שערך שלו שומר כמה מחלקות שונות יש בקובץ
-    int class_countLeft = 0;  // משתנה ששולחים לפונקצייה עם המצביע שערך שלו שומר כמה מחלקות שונות יש בקובץ
+    int total_rowsRigth = 0;
+    int total_rowsLeft = 0;
+    int class_countRigth = 0;
+    int class_countLeft = 0;
 
     char **list_classesRigth = count_classes(right, &class_countRigth, &total_rowsRigth);
     char **list_classesLeft = count_classes(left, &class_countLeft, &total_rowsLeft);
 
-    // יצירת מערך שיעקוב אחרי מספר התצפיות עבור כל מחלקה
     int *class_counts_for_each_classRigth = (int *)calloc(class_countRigth, sizeof(int));
-    int *class_counts_for_each_classLeft = (int *)calloc(class_countLeft, sizeof(int)); // מערך שיעקוב אחרי מספר התצפיות עבור כל מחלקה
+    int *class_counts_for_each_classLeft = (int *)calloc(class_countLeft, sizeof(int));
 
-    // ספירת התצפיות עבור כל מחלקה שונה בקובץ
-    count_rows_for_each_class(left, class_counts_for_each_classLeft, list_classesLeft, class_countLeft);     // ספירת התצפיות עבור כל מחלקה שונה בקובץ השמאלי
-    count_rows_for_each_class(right, class_counts_for_each_classRigth, list_classesRigth, class_countRigth); // ספירת התצפיות עבור כל מחלקה שונה בקובץ הימני
+    count_rows_for_each_class(left, class_counts_for_each_classLeft, list_classesLeft, class_countLeft);
+    count_rows_for_each_class(right, class_counts_for_each_classRigth, list_classesRigth, class_countRigth);
 
-    // חישוב האנטרופיה
-    double base_entropyRigth = entropy(class_counts_for_each_classRigth, class_countRigth); // שולח לו את המערך ששומר כמה תצפיות עבור כל מחלקה, שולח את המשתנה ששומר כמה מחלקות שונות ישנם בקובץ
-    double base_entropyLeft = entropy(class_counts_for_each_classLeft, class_countLeft);    // שולח לו את המערך ששומר כמה תצפיות עבור כל מחלקה, שולח את המשתנה ששומר כמה מחלקות שונות ישנם בקובץ
-    printf("Base Entropy for right side: %.6f\n", base_entropyRigth);                       // הדפסת האנטרופיה של הקובץ הימני
-    printf("Base Entropy for left side: %.6f\n", base_entropyLeft);                         // הדפסת האנטרופיה של הקובץ השמאלי
+    double base_entropyRigth = entropy(class_counts_for_each_classRigth, class_countRigth);
+    double base_entropyLeft = entropy(class_counts_for_each_classLeft, class_countLeft);
+    printf("Base Entropy for right side: %.6f\n", base_entropyRigth);
+    printf("Base Entropy for left side: %.6f\n\n", base_entropyLeft);
 
-    // חישוב ה-IG עבור כל עמודה
     SplitResult resultRigth = find_best_infogain(right, column_countRigth - 1, total_rowsRigth, base_entropyRigth, class_countRigth, list_classesRigth);
     SplitResult resultLeft = find_best_infogain(left, column_countLeft - 1, total_rowsLeft, base_entropyLeft, class_countLeft, list_classesLeft);
-    printf("[DEBUG] splitting by column %d with threshold %s\n", resultRigth.column_index, resultRigth.value);
-    printf("[DEBUG] splitting by column %d with threshold %s\n", resultLeft.column_index, resultLeft.value);
-    // בדיקה האם יש פיצול אפשרי
+
     if (resultRigth.column_index == -1)
     {
-        printf("[INFO] No valid split found for Left Side (Gain: %.6f)\n", resultRigth.gain);
+        printf("[INFO] No valid split found for Right Side (Gain: %.6f)\n", resultRigth.gain);
     }
     else
     {
-        printf("[INFO] Best Gain Overall for Left Side: Column %s with Gain %.6f\n",
+        printf("[INFO] Best Gain Overall for Right Side: Column %s with Gain %.6f\n",
                feature_vectorForRight[resultRigth.column_index], resultRigth.gain);
     }
     if (resultLeft.column_index == -1)
@@ -158,25 +152,18 @@ int main()
                feature_vectorForLeft[resultLeft.column_index], resultLeft.gain);
     }
 
-    printf("[INFO] Best Split Value for Right: %s\n", resultRigth.value); // הדפסת ערך הסף הטוב ביותר  => זה יהיה הערך שאיתו נבצע את הפיצול
-    printf("[INFO] Best Split Value for Left: %s\n", resultLeft.value);   // הדפסת ערך הסף הטוב ביותר  => זה יהיה הערך שאיתו נבצע את הפיצול
+    printf("[INFO] Best Split Value for Right: %s\n", resultRigth.value);
+    printf("[INFO] Best Split Value for Left: %s\n\n", resultLeft.value);
 
-    // יצירת קבצים זמניים עבור הפיצול
-    // הכנת השמות של הקבצים
-    // הכנת השמות של הקבצים
-    char left_left_filename[100], left_right_filename[100];   // שמות הקבצים לפיצול שמאלי
-    char right_right_filename[100], right_left_filename[100]; // שמות הקבצים לפיצול ימני
+    char left_left_filename[100], left_right_filename[100];
+    char right_right_filename[100], right_left_filename[100];
     FILE *left_left = NULL, *left_right = NULL, *right_left = NULL, *right_right = NULL;
 
     printf("[DEBUG] Rows before left second split: %d\n", count_rows(left));
-    // ===== פיצול צד שמאל =====
     if (resultLeft.value != NULL && resultLeft.column_index != -1)
     {
-        // יצירת שמות לקבצים לפי ערך הפיצול השמאלי
         sprintf(left_left_filename, "is_%s.csv", resultLeft.value);
         sprintf(left_right_filename, "is_not_%s.csv", resultLeft.value);
-
-        // החלפת תווים בעייתיים בשם הקובץ (רווחים ומקפים)
         for (int i = 0; left_left_filename[i]; i++)
             if (left_left_filename[i] == ' ' || left_left_filename[i] == '-')
                 left_left_filename[i] = '_';
@@ -184,25 +171,32 @@ int main()
             if (left_right_filename[i] == ' ' || left_right_filename[i] == '-')
                 left_right_filename[i] = '_';
 
-        // פתיחת קבצים כדי לבדוק האם העמודה היא מספרית
+        // פתיחה אחת בלבד לצורך בדיקה
         FILE *left_file = fopen(left_filename, "r");
-        FILE *right_file = fopen(right_filename, "r");
-        int is_numericLeftleft = check_if_column_contains_numbers(left_file, resultLeft.column_index);
-        int is_numericLeftRight = check_if_column_contains_numbers(right_file, resultLeft.column_index);
+        int is_numericLeft = check_if_column_contains_numbers(left_file, resultLeft.column_index);
         fclose(left_file);
-        fclose(right_file);
 
-        // יצירת קבצי פלט עבור הפיצול השמאלי
-        rewind(left);  // מחזיר את המצביע של הקובץ להתחלה
-        rewind(right); // מחזיר את המצביע של הקובץ להתחלה
-        left_left = create_temp_csv_filtered(left, resultLeft.column_index, resultLeft.value, 1, left_left_filename, is_numericLeftleft);
-        left_right = create_temp_csv_filtered(left, resultLeft.column_index, resultLeft.value, 0, left_right_filename, is_numericLeftRight);
+        // פיצול בפועל - שתי קריאות עם אותו is_numericLeft
+        FILE *left_copy1 = fopen(left_filename, "r");
+        FILE *left_copy2 = fopen(left_filename, "r");
 
-        // הדפסת סיכום פיצול שמאלי
+        left_left = create_temp_csv_filtered(left_copy1, resultLeft.column_index, resultLeft.value, 1, left_left_filename, is_numericLeft);
+        left_right = create_temp_csv_filtered(left_copy2, resultLeft.column_index, resultLeft.value, 0, left_right_filename, is_numericLeft);
+
+        fclose(left_copy1);
+        fclose(left_copy2);
+
         if (left_left && left_right)
         {
-            printf("\nLeft rows for the left second split: %d\n", count_rows(left_left));
-            printf("Right rows for the left second split: %d\n", count_rows(left_right));
+            fclose(left_left);
+            fclose(left_right);
+
+            left_left = fopen(left_left_filename, "r");
+            left_right = fopen(left_right_filename, "r");
+
+            printf("Left rows for the left second split: %d\n", count_rows(left_left));
+            printf("Right rows for the left second split: %d\n\n", count_rows(left_right));
+
             fclose(left_left);
             fclose(left_right);
             remove(left_left_filename);
@@ -211,18 +205,14 @@ int main()
     }
     else
     {
-        printf("[INFO] Skipping Left Split - No valid split found.\n");
+        printf("[INFO] Skipping Left Split - No valid split found.\n"); // אם לא נמצא פיצול תקין, לא נבצע את הפיצול
     }
 
     printf("[DEBUG] Rows before right second split: %d\n", count_rows(right));
-    // ===== פיצול צד ימין =====
     if (resultRigth.value != NULL && resultRigth.column_index != -1)
     {
-        // יצירת שמות לקבצים לפי ערך הפיצול הימני
         sprintf(right_right_filename, "is_%s.csv", resultRigth.value);
         sprintf(right_left_filename, "is_not_%s.csv", resultRigth.value);
-
-        // ניקוי תווים בעייתיים בשם הקובץ
         for (int i = 0; right_right_filename[i]; i++)
             if (right_right_filename[i] == ' ' || right_right_filename[i] == '-')
                 right_right_filename[i] = '_';
@@ -230,32 +220,36 @@ int main()
             if (right_left_filename[i] == ' ' || right_left_filename[i] == '-')
                 right_left_filename[i] = '_';
 
-        // פתיחת קבצים כדי לבדוק האם העמודה מספרית
-        FILE *left_file = fopen(left_filename, "r");
+        // בדיקה אחת בלבד אם העמודה מספרית
         FILE *right_file = fopen(right_filename, "r");
-        int is_numericRightleft = check_if_column_contains_numbers(left_file, resultRigth.column_index);
-        int is_numericRightRight = check_if_column_contains_numbers(right_file, resultRigth.column_index);
-        fclose(left_file);
+        int is_numericRight = check_if_column_contains_numbers(right_file, resultRigth.column_index);
         fclose(right_file);
 
-        // יצירת קבצי פלט לפיצול הימני
-        rewind(left);  // מחזיר את המצביע של הקובץ להתחלה
-        rewind(right); // מחזיר את המצביע של הקובץ להתחלה
-        right_left = create_temp_csv_filtered(right, resultRigth.column_index, resultRigth.value, 1, right_left_filename, is_numericRightleft);
-        right_right = create_temp_csv_filtered(right, resultRigth.column_index, resultRigth.value, 0, right_right_filename, is_numericRightRight);
+        // פיצול בפועל על שני עותקים של הקובץ
+        FILE *right_copy1 = fopen(right_filename, "r");
+        FILE *right_copy2 = fopen(right_filename, "r");
 
-        // הדפסת סיכום פיצול ימני
+        right_left = create_temp_csv_filtered(right_copy1, resultRigth.column_index, resultRigth.value, 1, right_left_filename, is_numericRight);
+        right_right = create_temp_csv_filtered(right_copy2, resultRigth.column_index, resultRigth.value, 0, right_right_filename, is_numericRight);
+
+        fclose(right_copy1);
+        fclose(right_copy2);
+
         if (right_left && right_right)
         {
+            fclose(right_left);
+            fclose(right_right);
+            right_left = fopen(right_left_filename, "r");
+            right_right = fopen(right_right_filename, "r");
             printf("Left rows for the right second split: %d\n", count_rows(right_left));
-            printf("Right rows for the right second split: %d\n", count_rows(right_right));
+            printf("Right rows for the right second split: %d\n\n", count_rows(right_right));
             fclose(right_left);
             fclose(right_right);
         }
     }
     else
     {
-        printf("[INFO] Skipping Right Split - No valid split found.\n");
+        printf("[INFO] Skipping Right Split - No valid split found.\n"); // אם לא נמצא פיצול תקין, לא נבצע את הפיצול
     }
 
     // שחרור זיכרון
