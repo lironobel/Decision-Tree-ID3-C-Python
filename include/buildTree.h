@@ -1,5 +1,6 @@
-#ifndef build_tree_h
-#define build_tree_h
+#ifndef buildTree_H
+#define buildTree_H
+#include <stdio.h>
 
 #include "tree.h"
 #include "dataset.h"

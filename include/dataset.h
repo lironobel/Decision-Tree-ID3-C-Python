@@ -9,10 +9,13 @@
 void print_unique_values_in_column(FILE *file, int column_index);
 
 // פונקציה שמקבלת קובץ ומחזירה מערך של מחרוזות שמייצגות את השמות של העמודות
-char **create_and_print_feature_vector(FILE *file, int *column_count);
+char **create_and_print_feature_vector(FILE *file, int column_count, int *allocated_columns);
+
+// פונקצייה שסופרת את כמות העמודות בקובץ
+int count_columnsfunc(FILE *file);
 
 // פונקציה שמקבלת קובץ ומחזירה מערך של מחרוזות שמייצגות את השמות של המחלקות
-char **count_classes(FILE *file, int *class_count, int *total_rows);
+char **count_classes(FILE *file, int *class_count);
 
 // פונקציה שמקבלת קובץ ומחזירה מערך של מספרים שמייצגים את מספר השורות עבור כל מחלקה
 void count_rows_for_each_class(FILE *file, int *class_counts, char **list_classes, int class_count);

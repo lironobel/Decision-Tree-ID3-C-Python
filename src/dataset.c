@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include "dataset.h"
 #include "utils.h"
-#include "build_tree.h"
+#include "buildTree.h"
 
 #define MAX_LINE_LENGTH 1024
 #define MAX_UNIQUE_VALUES 1000
@@ -17,6 +17,7 @@
 // רק אם העמודה מכילה ערכים שאינם מספרים
 void print_unique_values_in_column(FILE *file, int column_index)
 {
+    rewind(file);
     if (check_if_column_contains_numbers(file, column_index))
     {
         printf("The column contains only numbers.\n");
@@ -84,8 +85,9 @@ void print_unique_values_in_column(FILE *file, int column_index)
 
 // פונקציה שמקבלת קובץ ומחזירה מערך של מחרוזות שמייצגות את השמות של העמודות
 // ומדפיסה את השמות של העמודות
-char **create_and_print_feature_vector(FILE *file, int *column_count)
+char **create_and_print_feature_vector(FILE *file, int column_count, int *allocated_columns)
 {
+    rewind(file);
 
     char line[MAX_LINE_LENGTH];
     if (!fgets(line, sizeof(line), file)) // מוודא שהקובץ לא ריק או פגום לפני שמנסים לעבד אותו
@@ -94,14 +96,7 @@ char **create_and_print_feature_vector(FILE *file, int *column_count)
         return NULL;
     }
 
-    *column_count = 1;
-    for (int i = 0; line[i] != '\0'; i++)
-    {
-        if (line[i] == ',')
-            (*column_count)++;
-    }
-
-    char **feature_vector = (char **)malloc(*column_count * sizeof(char *));
+    char **feature_vector = (char **)malloc(column_count * sizeof(char *));
     if (!feature_vector)
     {
         printf("Memory allocation failed!\n");
@@ -112,6 +107,7 @@ char **create_and_print_feature_vector(FILE *file, int *column_count)
     int i = 0;
     while (token)
     {
+        (*allocated_columns)++;
         feature_vector[i] = (char *)malloc(strlen(token) + 1);
         if (!feature_vector[i])
         {
@@ -133,38 +129,69 @@ char **create_and_print_feature_vector(FILE *file, int *column_count)
     else
     {
         printf("\nFeature Vector:\n");
-        for (int i = 0; i < *column_count; i++)
+        for (int i = 0; i < column_count; i++)
             printf("%d: %s\n", i + 1, feature_vector[i]);
     }
     rewind(file); // העברת המצביע של הקובץ להתחלה
     return feature_vector;
 }
 
+// פונקצייה לספירת מספר העמודות בקובץ
+int count_columnsfunc(FILE *file)
+{
+    rewind(file);
+    int column_count = 0;
+    char line[MAX_LINE_LENGTH];
+    if (!fgets(line, sizeof(line), file)) // מוודא שהקובץ לא ריק או פגום לפני שמנסים לעבד אותו
+    {
+        printf("Error reading file.\n");
+        return 0;
+    }
+
+    for (int i = 0; line[i] != '\0'; i++)
+    {
+        if (line[i] == ',')
+            column_count++;
+    }
+    rewind(file);
+    return column_count;
+}
+
 // פונקציה לספירת סוגי המחלקות הייחודיות
-char **count_classes(FILE *file, int *class_count, int *total_rows)
+char **count_classes(FILE *file, int *class_count)
 {
     char line[1024];
     char **unique_classes = NULL; // מערך לשמירת מחלקות ייחודיות
     int num_classes = 0;
     int class_column = -1;
+    rewind(file);
+    if (!file)
+    {
+        printf("Invalid file pointer.\n");
+        *class_count = 0;
+        return NULL;
+    }
 
     // קריאת כותרות הקובץ כדי לקבוע את מספר העמודות
-    if (fgets(line, sizeof(line), file))
+    if (!fgets(line, sizeof(line), file))
     {
-        // ספירת מספר העמודות לפי מספר הפסיקים
-        int col_count = 0;
-        for (char *p = line; *p; p++)
-        {
-            if (*p == ',')
-                col_count++;
-        }
-        class_column = col_count; // העמודה האחרונה היא מספר העמודות הכולל
+        printf("Error reading file header.\n");
+        *class_count = 0;
+        return NULL;
     }
+
+    // ספירת מספר העמודות לפי מספר הפסיקים
+    int col_count = 0;
+    for (char *p = line; *p; p++)
+    {
+        if (*p == ',')
+            col_count++;
+    }
+    class_column = col_count; // העמודה האחרונה היא מספר העמודות הכולל
 
     // קריאת הנתונים
     while (fgets(line, sizeof(line), file))
     {
-        (*total_rows)++;
         char *token = strtok(line, ",");
         int col = 0;
         char *class_value = NULL;
@@ -196,13 +223,32 @@ char **count_classes(FILE *file, int *class_count, int *total_rows)
             // אם לא נמצא, הוסף את המחלקה לרשימה
             if (!found)
             {
-                unique_classes = realloc(unique_classes, (num_classes + 1) * sizeof(char *));
-                if (!unique_classes)
+                char *copy = strdup(class_value);
+                if (!copy)
                 {
                     printf("Memory allocation failed.\n");
+                    // ניקוי מה שכבר הוקצה
+                    for (int j = 0; j < num_classes; j++)
+                        free(unique_classes[j]);
+                    free(unique_classes);
+                    *class_count = 0;
                     return NULL;
                 }
-                unique_classes[num_classes] = strdup(class_value);
+
+                char **temp = realloc(unique_classes, (num_classes + 1) * sizeof(char *));
+                if (!temp)
+                {
+                    printf("Memory allocation failed.\n");
+                    free(copy);
+                    for (int j = 0; j < num_classes; j++)
+                        free(unique_classes[j]);
+                    free(unique_classes);
+                    *class_count = 0;
+                    return NULL;
+                }
+
+                unique_classes = temp;
+                unique_classes[num_classes] = copy;
                 num_classes++;
             }
         }
@@ -210,11 +256,14 @@ char **count_classes(FILE *file, int *class_count, int *total_rows)
 
     // עדכון class_count עם מספר סוגי המחלקות
     *class_count = num_classes;
-    if (unique_classes == NULL)
+
+    if (num_classes == 0)
     {
-        printf("Failed to read classes.\n");
-        return 0;
+        printf("No classes found in the file.\n");
+        free(unique_classes);
+        return NULL;
     }
+
     rewind(file);
     return unique_classes;
 }
@@ -225,7 +274,7 @@ void count_rows_for_each_class(FILE *file, int *class_counts, char **list_classe
 {
     char line[1024];
     int class_column = -1;
-
+    rewind(file);
     // קריאת הכותרת כדי לזהות את מספר העמודות
     if (fgets(line, sizeof(line), file))
     {
@@ -277,18 +326,31 @@ void count_rows_for_each_class(FILE *file, int *class_counts, char **list_classe
 FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_value, int keep_if_match, const char *temp_filename, int is_numeric)
 {
     rewind(file);
-
+    int written_rows = 0;
     FILE *temp_file = fopen(temp_filename, "w");
     if (!temp_file)
     {
-        printf("Failed to create temp file: %s\n", temp_filename);
+        printf("[ERROR] Failed to create temp file: %s\n", temp_filename);
         return NULL;
     }
 
     char line[MAX_LINE_LENGTH];
+
     if (fgets(line, sizeof(line), file))
     {
-        fputs(line, temp_file); // כתיבת שורת כותרת
+        if (strlen(line) < 2)
+        {
+            printf("[ERROR] Header line is too short or empty in source file.\n");
+            fclose(temp_file);
+            return NULL;
+        }
+        fputs(line, temp_file);
+    }
+    else
+    {
+        printf("[ERROR] Failed to read header line from source file.\n");
+        fclose(temp_file);
+        return NULL;
     }
 
     while (fgets(line, sizeof(line), file))
@@ -309,48 +371,61 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
             token = strtok(NULL, ",");
         }
 
-        if (col <= column_index)
-            continue;
+        if (col <= column_index) continue;
 
         char *value = tokens[column_index];
         value[strcspn(value, "\n\r")] = '\0';
+        trim(value);
 
         int match = 0;
-        int result = 0;
-
         if (is_numeric)
         {
-            double val = atof(trim(value));
+            double val = atof(value);
             double threshold = atof(trim((char *)match_value));
-
             match = val <= threshold;
-
-            if (keep_if_match)
-                result = match;
-            else
-                result = !match;
         }
         else
         {
             char match_copy[256];
             strncpy(match_copy, match_value, sizeof(match_copy));
             match_copy[sizeof(match_copy) - 1] = '\0';
-
-            match = strcmp(trim(value), trim(match_copy)) == 0;
-
-            if (keep_if_match)
-                result = match;
-            else
-                result = !match;
+            trim(match_copy);
+            match = strcmp(value, match_copy) == 0;
         }
+
+        int result = keep_if_match ? match : !match;
 
         if (result)
         {
             fputs(original_line, temp_file);
+            written_rows++;
         }
     }
 
     fflush(temp_file);
-    rewind(temp_file);
-    return temp_file;
+    fclose(temp_file);
+
+    if (written_rows == 0)
+    {
+        printf("[WARNING] No rows matched for filtering into %s\n", temp_filename);
+        return NULL;
+    }
+
+    FILE *read_file = fopen(temp_filename, "r");
+    if (!read_file)
+    {
+        printf("[ERROR] Failed to reopen temp file: %s\n", temp_filename);
+        return NULL;
+    }
+
+    char header_check[MAX_LINE_LENGTH];
+    if (!fgets(header_check, sizeof(header_check), read_file))
+    {
+        printf("[ERROR] File %s opened but header line is missing or unreadable.\n", temp_filename);
+        fclose(read_file);
+        return NULL;
+    }
+
+    rewind(read_file);
+    return read_file;
 }

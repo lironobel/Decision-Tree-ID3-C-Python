@@ -15,7 +15,7 @@
         "src/infogain.c",
         "src/utils.c",
         "src/tree.c",
-        "src/build_tree.c",
+        "src/buildTree.c",
         "-o",
         "build/decision_tree.exe"
       ],

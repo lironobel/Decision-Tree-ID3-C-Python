@@ -7,12 +7,10 @@
 #include "infogain.h"
 #include "utils.h"
 #include "tree.h"
-#include "build_tree.h"
+#include "buildTree.h"
 
 int main()
 {
-    // פיצול ראשון בלבד
-
     // פתיחת הקובץ
     FILE *file = fopen("data\\adult.csv", "r");
     if (!file)
@@ -21,17 +19,49 @@ int main()
         system("pause");
         return 0;
     }
-    int column_count = 0;
-    printf("Total Rows: %d\n", count_rows(file));
-    // קריאה לפונקציה שמחזירה את המערך של השמות של העמודות
-    // על הדרך גם סופרת כמה עמודות שונות יש לנו
-    // בגלל זה נשלח את המצביע של העמודות לפונקציה
-    char **feature_vector = create_and_print_feature_vector(file, &column_count);
 
-    int total_rows = 0; // מספר השורות בקובץ
+    
+    int total_rows = count_rows(file);
+    int class_count = 0;
+    count_classes(file, &class_count);
+    // יצירת מערך שיעקוב אחרי מספר התצפיות עבור כל מחלקה
+    int *class_counts_for_each_class = (int *)calloc(class_count, sizeof(int));
+    char **list_classes = count_classes(file, &class_count);
+
+    // ספירת התצפיות עבור כל מחלקה שונה
+    count_rows_for_each_class(file, class_counts_for_each_class, list_classes, class_count);
+    // הדפסת כמות התצפיות עבור כל מחלקה
+    for (int i = 0; i < class_count; i++)
+    {
+        printf("Class: %s, Count: %d\n", list_classes[i], class_counts_for_each_class[i]);
+    }
+    printf("Total Rows: %d, Unique Classes: %d\n", total_rows, class_count);
+    // קריאה לפונקציה שמבנה עץ החלטה
+    printf("Building decision tree...\n");
+    Node *root = NULL;
+    build_tree(&root, file);
+
+    // שחרור זיכרון
+    free_tree(root);
+    fclose(file);
+    
+
+    // שני פיצולים איטרטיביים
+    /*
+    printf("Total Rows: %d\n", count_rows(file));
+    // פונקצייה שסופרת כמה עמודות שונות יש בקובץ
+    int column_count = count_columnsfunc(file);
+
+    int allocated_columns = 0;
+    // קריאה לפונקציה שמחזירה את המערך של השמות של העמודות
+    char **feature_vector = create_and_print_feature_vector(file, column_count, &allocated_columns);
+
+    // מספר השורות בקובץ
+    int total_rows = count_rows(file);
+
     // קריאה לפונקציה שמחזירה את המערך של השמות של המחלקות
     int class_count = 0; // משתנה ששולחים לפונקצייה עם המצביע שערך שלו שומר כמה מחלקות שונות יש בקובץ
-    char **list_classes = count_classes(file, &class_count, &total_rows);
+    char **list_classes = count_classes(file, &class_count);
 
     // יצירת מערך שיעקוב אחרי מספר התצפיות עבור כל מחלקה
     int *class_counts_for_each_class = (int *)calloc(class_count, sizeof(int));
@@ -99,25 +129,28 @@ int main()
     // עד כאן פיצול ראשון
 
     // פיצול שני
-    int column_countRigth = 0;
-    int column_countLeft = 0;
+
+    int column_countRigth = count_columnsfunc(right);
+    int column_countLeft = count_columnsfunc(left);
     printf("\n\n[INFO] Splitting again...\n\n");
 
     rewind(left);
     rewind(right);
 
+    int allocated_columnsforRight = 0;
+    int allocated_columnsforLeft = 0;
     printf("feature_vector for right: \n");
-    char **feature_vectorForRight = create_and_print_feature_vector(right, &column_countRigth);
+    char **feature_vectorForRight = create_and_print_feature_vector(right, column_countRigth, &allocated_columnsforRight);
     printf("feature_vector for left: \n");
-    char **feature_vectorForLeft = create_and_print_feature_vector(left, &column_countLeft);
+    char **feature_vectorForLeft = create_and_print_feature_vector(left, column_countLeft,  &allocated_columnsforLeft);
 
-    int total_rowsRigth = 0;
-    int total_rowsLeft = 0;
+    int total_rowsRigth = count_rows(right);
+    int total_rowsLeft = count_rows(left);
     int class_countRigth = 0;
     int class_countLeft = 0;
 
-    char **list_classesRigth = count_classes(right, &class_countRigth, &total_rowsRigth);
-    char **list_classesLeft = count_classes(left, &class_countLeft, &total_rowsLeft);
+    char **list_classesRigth = count_classes(right, &class_countRigth);
+    char **list_classesLeft = count_classes(left, &class_countLeft);
 
     int *class_counts_for_each_classRigth = (int *)calloc(class_countRigth, sizeof(int));
     int *class_counts_for_each_classLeft = (int *)calloc(class_countLeft, sizeof(int));
@@ -263,13 +296,20 @@ int main()
     remove(left_left_filename);
     remove(left_right_filename);
 
-    for (int i = 0; i < column_count; i++)
-        free(feature_vector[i]);
-    free(feature_vector);
+    if (feature_vector)
+    {
+        for (int i = 0; i < allocated_columns; i++)
+            if (feature_vector[i])
+                free(feature_vector[i]);
+        free(feature_vector);
+    }
 
-    for (int i = 0; i < class_count; i++)
-        free(list_classes[i]);
-    free(list_classes);
+    if (list_classes)
+    {
+        for (int i = 0; i < class_count; i++)
+            free(list_classes[i]);
+        free(list_classes);
+    }
 
     free(class_counts_for_each_class);
     free(class_counts_for_each_classRigth);
@@ -279,18 +319,22 @@ int main()
         free(list_classesRigth[i]);
     free(list_classesRigth);
 
-    for (int i = 0; i < class_countLeft; i++)
-        free(list_classesLeft[i]);
-    free(list_classesLeft);
+    if (list_classesLeft)
+    {
+        for (int i = 0; i < class_countLeft; i++)
+            if (list_classesLeft[i])
+                free(list_classesLeft[i]);
+        free(list_classesLeft);
+    }
 
-    for (int i = 0; i < column_countRigth; i++)
+    for (int i = 0; i < allocated_columnsforRight; i++)
         free(feature_vectorForRight[i]);
     free(feature_vectorForRight);
 
-    for (int i = 0; i < column_countLeft; i++)
+    for (int i = 0; i < allocated_columnsforLeft; i++)
         free(feature_vectorForLeft[i]);
     free(feature_vectorForLeft);
-
+    */
     system("pause");
     return 0;
 }
