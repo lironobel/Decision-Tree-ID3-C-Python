@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "tree.h"
 #include "dataset.h"
 #include "infogain.h"
@@ -16,7 +17,7 @@ void build_tree(Node **node, FILE *file)
 {
     rewind(file);
     if (*node == NULL)
-        *node = create_node(0, NULL, 0, -1, -1);
+        *node = create_node(1, NULL, 0, -1, -1.0, 1, NULL); // צומת התחלה כעלה זמני
 
     global_depth++;
 
@@ -57,6 +58,9 @@ void build_tree(Node **node, FILE *file)
             exit(1);
         }
 
+        for (int i = 0; i < class_count; i++)
+            (*node)->labels[i] = class_counts_for_each_class[i];
+
         printf("Leaf node: stopping condition met (gain: %.4f, avg: %.4f)\n", best_split.gain, average_ig);
         goto cleanup;
     }
@@ -71,6 +75,7 @@ void build_tree(Node **node, FILE *file)
     rewind(file);
     FILE *right_f = create_temp_csv_filtered(file, best_split.column_index, best_split.value, 0, right_filename, best_split.is_numeric);
 
+    // בדוק אם הקבצים נוצרו בהצלחה
     if (!left_f || !right_f)
     {
         printf("[ERROR] Failed to create filtered files for split.\n");
@@ -78,8 +83,8 @@ void build_tree(Node **node, FILE *file)
             fclose(left_f);
         if (right_f)
             fclose(right_f);
-        remove("left_temp.csv");
-        remove("right_temp.csv");
+        remove(left_filename);
+        remove(right_filename);
         goto cleanup;
     }
 
@@ -91,8 +96,8 @@ void build_tree(Node **node, FILE *file)
         printf("[ERROR] One of the filtered files has no data. Left: %d | Right: %d\n", left_rows, right_rows);
         fclose(left_f);
         fclose(right_f);
-        remove("left_temp.csv");
-        remove("right_temp.csv");
+        remove(left_filename);
+        remove(right_filename);
         goto cleanup;
     }
 
@@ -105,20 +110,25 @@ void build_tree(Node **node, FILE *file)
     rewind(left_f);
     rewind(right_f);
 
-    (*node)->feature_index = best_split.column_index;
+    // עדכון פרטי הצומת הנוכחי
     (*node)->is_leaf = 0;
-    (*node)->threshold = best_split.is_numeric ? atof(best_split.value) : -1;
+    (*node)->feature_index = best_split.column_index;
+    (*node)->threshold = best_split.is_numeric ? atof(best_split.value) : -1.0;
+    (*node)->is_numeric_split = best_split.is_numeric;
+    (*node)->category_value = best_split.is_numeric ? NULL : strdup(best_split.value);
 
-    (*node)->left = create_node(0, NULL, 0, best_split.column_index, (*node)->threshold);
-    (*node)->right = create_node(0, NULL, 0, best_split.column_index, (*node)->threshold);
+    // יצירת בנים
+    (*node)->left = create_node(1, NULL, 0, -1, -1.0, 1, NULL);
+    (*node)->right = create_node(1, NULL, 0, -1, -1.0, 1, NULL);
 
+    // קריאה רקורסיבית לבנים
     build_tree(&((*node)->left), left_f);
     build_tree(&((*node)->right), right_f);
 
     fclose(left_f);
     fclose(right_f);
-    remove("left_temp.csv");
-    remove("right_temp.csv");
+    remove(left_filename);
+    remove(right_filename);
 
 cleanup:
     global_depth--;

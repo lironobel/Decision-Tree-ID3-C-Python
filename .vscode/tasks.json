@@ -16,6 +16,7 @@
         "src/utils.c",
         "src/tree.c",
         "src/buildTree.c",
+        "src/tree_graph.c",
         "-o",
         "build/decision_tree.exe"
       ],

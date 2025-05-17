@@ -8,9 +8,12 @@
 #include "utils.h"
 #include "tree.h"
 #include "buildTree.h"
+#include "tree_graph.h"
 
 int main()
 {
+    const char *DOT_PATH = "C:\\Program Files\\Graphviz\\bin\\dot.exe"; // עדכן את הנתיב לפי המיקום האמיתי
+
     // פתיחת הקובץ
     FILE *file = fopen("data\\adult.csv", "r");
     if (!file)
@@ -20,31 +23,51 @@ int main()
         return 0;
     }
 
-    
-    int total_rows = count_rows(file);
-    int class_count = 0;
-    count_classes(file, &class_count);
-    // יצירת מערך שיעקוב אחרי מספר התצפיות עבור כל מחלקה
-    int *class_counts_for_each_class = (int *)calloc(class_count, sizeof(int));
-    char **list_classes = count_classes(file, &class_count);
-
-    // ספירת התצפיות עבור כל מחלקה שונה
-    count_rows_for_each_class(file, class_counts_for_each_class, list_classes, class_count);
-    // הדפסת כמות התצפיות עבור כל מחלקה
-    for (int i = 0; i < class_count; i++)
-    {
-        printf("Class: %s, Count: %d\n", list_classes[i], class_counts_for_each_class[i]);
-    }
-    printf("Total Rows: %d, Unique Classes: %d\n", total_rows, class_count);
     // קריאה לפונקציה שמבנה עץ החלטה
     printf("Building decision tree...\n");
     Node *root = NULL;
     build_tree(&root, file);
 
+    int column_count = count_columnsfunc(file);                                   // קריאה לפונקציה שסופרת כמה עמודות שונות יש בקובץ
+    char **feature_names_vector = (char **)malloc(sizeof(char *) * column_count); // הקצה זיכרון למערך של שמות תכונות
+
+    feature_names_vector = create_and_print_feature_vector(file, column_count, feature_names_vector); // קריאה לפונקציה שמבנה את המערך של השמות של העמודות
+
+    FILE *dot_file = fopen("tree.dot", "w");
+    if (dot_file)
+    {
+
+        export_tree_to_dot(root, dot_file, feature_names_vector);
+        fclose(dot_file);
+
+        // הפקת תמונה
+        char command[512];
+        sprintf(command, "\"%s\" -Tpng tree.dot -o tree.png", DOT_PATH);
+        int result = system(command);
+        if (result != 0)
+        {
+            printf("[ERROR] dot command failed with code: %d\n", result);
+        }
+
+        // פתיחה אוטומטית של התמונה
+        if (fopen("tree.png", "r") != NULL)
+        {
+            system("start tree.png");
+        }
+        else
+        {
+            printf("[ERROR] tree.png not found when trying to open.\n");
+        }
+    }
+
     // שחרור זיכרון
     free_tree(root);
     fclose(file);
-    
+    fclose(dot_file);
+    for (int i = 0; i < column_count; i++)
+    {
+        free(feature_names_vector[i]);
+    }
 
     // שני פיצולים איטרטיביים
     /*
@@ -335,6 +358,8 @@ int main()
         free(feature_vectorForLeft[i]);
     free(feature_vectorForLeft);
     */
+    
     system("pause");
+
     return 0;
 }
