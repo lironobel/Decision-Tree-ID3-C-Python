@@ -47,7 +47,7 @@ void build_tree(Node **node, FILE *file)
     printf("Best Gain Overall: Column %d with Gain %.6f\n", best_split.column_index, best_split.gain);
 
     // תנאי עצירה
-    if (best_split.gain < 0.01 || global_depth >= 5 || total_rows <= 10 || average_ig < 0.01 || class_count == 1)
+    if (best_split.gain < 0.01 || global_depth >= 17 || total_rows <= 10 || average_ig < 0.01 || class_count == 1)
     {
         (*node)->is_leaf = 1;
         (*node)->num_classes = class_count;

@@ -12,6 +12,9 @@
 
 int main()
 {
+    MakeSure("data\\adult.csv"); // בדוק אם הקובץ קיים ותקין
+
+    // נתיב לקובץ dot של Graphviz
     const char *DOT_PATH = "C:\\Program Files\\Graphviz\\bin\\dot.exe"; // עדכן את הנתיב לפי המיקום האמיתי
 
     // פתיחת הקובץ
@@ -23,6 +26,27 @@ int main()
         return 0;
     }
 
+    // הדפסה של המחלקות הייחודיות בקובץ
+    int class_count = 0;
+    char **classes = count_classes(file, &class_count); // קבל את השמות והמספר
+    if (classes == NULL || class_count == 0)
+    {
+        printf("No classes found in the file.\n");
+        fclose(file);
+        return 0;
+    }
+    printf("Classes found (%d):\n", class_count);
+    for (int i = 0; i < class_count; i++)
+    {
+        printf("- %s\n", classes[i]);
+    }
+    // שחרור זיכרון
+    for (int i = 0; i < class_count; i++)
+    {
+        free(classes[i]);
+    }
+    free(classes);
+
     // קריאה לפונקציה שמבנה עץ החלטה
     printf("Building decision tree...\n");
     Node *root = NULL;
@@ -31,7 +55,8 @@ int main()
     int column_count = count_columnsfunc(file);                                   // קריאה לפונקציה שסופרת כמה עמודות שונות יש בקובץ
     char **feature_names_vector = (char **)malloc(sizeof(char *) * column_count); // הקצה זיכרון למערך של שמות תכונות
 
-    feature_names_vector = create_and_print_feature_vector(file, column_count, feature_names_vector); // קריאה לפונקציה שמבנה את המערך של השמות של העמודות
+    int allocated_columns = 0;
+    feature_names_vector = create_and_print_feature_vector(file, column_count, &allocated_columns);
 
     FILE *dot_file = fopen("tree.dot", "w");
     if (dot_file)
@@ -358,7 +383,7 @@ int main()
         free(feature_vectorForLeft[i]);
     free(feature_vectorForLeft);
     */
-    
+
     system("pause");
 
     return 0;

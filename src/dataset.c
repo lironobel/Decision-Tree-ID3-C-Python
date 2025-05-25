@@ -429,3 +429,123 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
     rewind(read_file);
     return read_file;
 }
+
+
+
+// פונקצייה שתרוץ בהתחלה של התהליך ותבדוק אם משהו פגום או יכול להשתבש 
+void MakeSure(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+    {
+        printf("[ERROR] Failed to open file: %s\n", filename);
+        exit(1);
+    }
+    printf("[INFO] File opened successfully: %s\n", filename);
+
+    // בדיקת מספר עמודות
+    int column_count = count_columnsfunc(file);
+    if (column_count <= 0 || column_count > MAX_COLUMN_COUNT)
+    {
+        printf("[ERROR] Invalid column count: %d\n", column_count);
+        fclose(file);
+        exit(1);
+    }
+    printf("[INFO] Column count: %d\n", column_count);
+
+    // בדיקת שמות עמודות
+    int allocated_columns = 0;
+    char **feature_vector = create_and_print_feature_vector(file, column_count, &allocated_columns);
+    if (!feature_vector)
+    {
+        printf("[ERROR] Failed to create feature vector.\n");
+        fclose(file);
+        exit(1);
+    }
+    for (int i = 0; i < allocated_columns; i++)
+    {
+        if (feature_vector[i] == NULL || strlen(feature_vector[i]) == 0)
+        {
+            printf("[ERROR] Empty or NULL column name at index %d.\n", i);
+            fclose(file);
+            exit(1);
+        }
+    }
+    printf("[INFO] All column names are valid.\n");
+
+    // בדיקת מחלקות
+    int class_count = 0;
+    char **class_names = count_classes(file, &class_count);
+    if (!class_names || class_count == 0)
+    {
+        printf("[ERROR] No classes found in the file.\n");
+        fclose(file);
+        exit(1);
+    }
+    printf("[INFO] Classes found (%d):\n", class_count);
+    for (int i = 0; i < class_count; i++)
+    {
+        printf("- %s\n", class_names[i]);
+        free(class_names[i]);
+    }
+    free(class_names);
+
+    // בדיקה כללית של ערכים ריקים ושגויים בעמודות
+    char line[MAX_LINE_LENGTH];
+    int row_number = 1;
+    rewind(file);
+    fgets(line, sizeof(line), file); // דילוג על כותרת
+
+    bool *is_numeric_column = (bool *)calloc(column_count, sizeof(bool));
+    for (int i = 0; i < column_count; i++)
+    {
+        if (i == column_count - 1) // התעלמות מהעמודה האחרונה (המחלקה)
+            is_numeric_column[i] = false;
+        else
+            is_numeric_column[i] = check_if_column_contains_numbers(file, i);
+    }
+
+    rewind(file);
+    fgets(line, sizeof(line), file); // דילוג על כותרת שוב
+
+    while (fgets(line, sizeof(line), file))
+    {
+        row_number++;
+        int col = 0;
+        char *token = strtok(line, ",");
+        while (token)
+        {
+            trim(token);
+            if (strlen(token) == 0)
+            {
+                printf("[WARNING] Empty value at row %d, column %d.\n", row_number, col + 1);
+            }
+            else if (col < column_count - 1 && is_numeric_column[col])
+            {
+                // בדוק מספרים רק בעמודות שאינן עמודת המחלקה
+                char *endptr;
+                strtod(token, &endptr);
+                if (endptr == token || *endptr != '\0')
+                {
+                    printf("[WARNING] Invalid numeric value at row %d, column %d: %s\n", row_number, col + 1, token);
+                }
+            }
+            token = strtok(NULL, ",");
+            col++;
+        }
+
+        if (col < column_count)
+        {
+            printf("[WARNING] Row %d has fewer columns than expected. Expected: %d, Found: %d\n", row_number, column_count, col);
+        }
+    }
+
+    fclose(file);
+    free(is_numeric_column);
+
+    for (int i = 0; i < allocated_columns; i++)
+        free(feature_vector[i]);
+    
+
+    printf("[INFO] MakeSure() checks passed. Everything looks good!\n");
+}
