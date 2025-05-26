@@ -47,7 +47,7 @@ void build_tree(Node **node, FILE *file)
     printf("Best Gain Overall: Column %d with Gain %.6f\n", best_split.column_index, best_split.gain);
 
     // תנאי עצירה
-    if (best_split.gain < 0.01 || global_depth >= 17 || total_rows <= 10 || average_ig < 0.01 || class_count == 1)
+    if (best_split.gain < 0.01 || global_depth >= 3 || total_rows <= 10 || average_ig < 0.01 || class_count == 1)
     {
         (*node)->is_leaf = 1;
         (*node)->num_classes = class_count;
@@ -74,7 +74,6 @@ void build_tree(Node **node, FILE *file)
     FILE *left_f = create_temp_csv_filtered(file, best_split.column_index, best_split.value, 1, left_filename, best_split.is_numeric);
     rewind(file);
     FILE *right_f = create_temp_csv_filtered(file, best_split.column_index, best_split.value, 0, right_filename, best_split.is_numeric);
-
     // בדוק אם הקבצים נוצרו בהצלחה
     if (!left_f || !right_f)
     {

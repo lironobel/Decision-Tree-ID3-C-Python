@@ -14,7 +14,7 @@ int main()
 {
     MakeSure("data\\adult.csv"); // בדוק אם הקובץ קיים ותקין
 
-    // נתיב לקובץ dot של Graphviz
+      // נתיב לקובץ dot של Graphviz
     const char *DOT_PATH = "C:\\Program Files\\Graphviz\\bin\\dot.exe"; // עדכן את הנתיב לפי המיקום האמיתי
 
     // פתיחת הקובץ
