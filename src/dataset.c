@@ -371,8 +371,7 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
             token = strtok(NULL, ",");
         }
 
-        if (col <= column_index)
-            continue;
+        if (col <= column_index) continue;
 
         char *value = tokens[column_index];
         value[strcspn(value, "\n\r")] = '\0';
@@ -431,28 +430,26 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
     return read_file;
 }
 
-// פונקצייה שתרוץ בהתחלה של התהליך ותבדוק אם משהו פגום או יכול להשתבש
+
+
+// פונקצייה שתרוץ בהתחלה של התהליך ותבדוק אם משהו פגום או יכול להשתבש 
 void MakeSure(const char *filename)
 {
-    int system_result = 0; // משתנה לשמירת תוצאת המערכת
-    printf("[INFO] Starting MakeSure() checks for file: %s\n", filename);
     FILE *file = fopen(filename, "r");
-    // בדיקה אם הקובץ נפתח בהצלחה
     if (!file)
     {
         printf("[ERROR] Failed to open file: %s\n", filename);
-        system("pause");
         exit(1);
     }
     printf("[INFO] File opened successfully: %s\n", filename);
 
     // בדיקת מספר עמודות
     int column_count = count_columnsfunc(file);
-    if (column_count <= 0 )
+    if (column_count <= 0 || column_count > MAX_COLUMN_COUNT)
     {
         printf("[ERROR] Invalid column count: %d\n", column_count);
         fclose(file);
-        system("pause");
+        exit(1);
     }
     printf("[INFO] Column count: %d\n", column_count);
 
@@ -463,7 +460,7 @@ void MakeSure(const char *filename)
     {
         printf("[ERROR] Failed to create feature vector.\n");
         fclose(file);
-        system("pause");
+        exit(1);
     }
     for (int i = 0; i < allocated_columns; i++)
     {
@@ -471,8 +468,7 @@ void MakeSure(const char *filename)
         {
             printf("[ERROR] Empty or NULL column name at index %d.\n", i);
             fclose(file);
-                   system("pause");
-
+            exit(1);
         }
     }
     printf("[INFO] All column names are valid.\n");
@@ -484,8 +480,7 @@ void MakeSure(const char *filename)
     {
         printf("[ERROR] No classes found in the file.\n");
         fclose(file);
-                system("pause");
-
+        exit(1);
     }
     printf("[INFO] Classes found (%d):\n", class_count);
     for (int i = 0; i < class_count; i++)
@@ -524,7 +519,6 @@ void MakeSure(const char *filename)
             if (strlen(token) == 0)
             {
                 printf("[WARNING] Empty value at row %d, column %d.\n", row_number, col + 1);
-                system_result = 1;
             }
             else if (col < column_count - 1 && is_numeric_column[col])
             {
@@ -534,7 +528,6 @@ void MakeSure(const char *filename)
                 if (endptr == token || *endptr != '\0')
                 {
                     printf("[WARNING] Invalid numeric value at row %d, column %d: %s\n", row_number, col + 1, token);
-                    system("pause");
                 }
             }
             token = strtok(NULL, ",");
@@ -552,11 +545,7 @@ void MakeSure(const char *filename)
 
     for (int i = 0; i < allocated_columns; i++)
         free(feature_vector[i]);
-    if(system_result != 0)
-    {
-        printf("[ERROR] MakeSure() checks failed. Please fix the issues and try again.\n");
-        system("pause");
-        exit(1);
-    }
+    
+
     printf("[INFO] MakeSure() checks passed. Everything looks good!\n");
 }

@@ -1,11 +1,29 @@
+# הגדרות קומפילציה
 CC = gcc
 CFLAGS = -Wall -Wextra -g3 -Iinclude
+
+# קבצי המקור
 SRC = src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c src/build_tree.c
+
+# קובץ הפלט (הקובץ שיווצר לאחר הקומפילציה)
 OUT = build/decision_tree.exe
 
+# יעד ברירת מחדל: בניית הפרויקט
 all:
 	@if not exist build mkdir build
 	$(CC) $(CFLAGS) $(SRC) -o $(OUT)
+	@echo [INFO] Build completed successfully!
 
+# ניקוי קבצים ישנים (הסרת קבצי exe ישנים)
 clean:
-	@if exist build\*.exe del /Q build\*.exe
+	@if exist build\\*.exe del /Q build\\*.exe
+	@echo [INFO] Clean completed!
+
+# הרצת הקוד לאחר קומפילציה (מריץ את הקובץ שהתקמפל)
+run: all
+	$(OUT)
+
+# יצירת תמונה מחדש מקובץ DOT באמצעות Graphviz ופתיחה אוטומטית
+dot:
+	@dot -Tpng C:\\Users\\liron\\Desktop\\Final-project\\VScode\\Project\\Final-project\\tree.dot -o C:\\Users\\liron\\Desktop\\Final-project\\VScode\\Project\\Final-project\\tree.png
+	@start "" C:\\Users\\liron\\Desktop\\Final-project\\VScode\\Project\\Final-project\\tree.png
