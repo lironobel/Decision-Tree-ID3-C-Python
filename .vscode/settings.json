@@ -6,8 +6,10 @@
     "tree.h": "c",
     "build_tree.h": "c",
     "utils.h": "c",
+    "pretictedvalues.h": "c",
     "tree_graph.h": "c",
-    "buildtree.h": "c"
+    "buildtree.h": "c",
+    "string.h": "c"
   },
   "C_Cpp.errorSquiggles": "enabled",
   "C_Cpp.default.compilerPath": "C:/MinGW/bin/gcc.exe",
