@@ -51,7 +51,7 @@ int build_tree(Node **node, FILE *file, int depth, const char *side)
     printf("\n[INFO] Depth: %d | Side: %s | Best Gain: Column %d with Gain %.6f\n", depth, side, best_split.column_index, best_split.gain);
 
     // תנאי עצירה
-    if (best_split.gain < 0.01 || depth >= 50 || total_rows <= 1 || average_ig < 0.01 || class_count == 1)
+    if (best_split.gain < 0.01 || depth >= 5 || total_rows <= 10 || average_ig < 0.01 || class_count == 1)
     {
         // שמירת העומק הכי גבוהה שהגענו אליו
         if (depth > max_depth)

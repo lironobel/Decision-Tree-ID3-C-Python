@@ -13,8 +13,6 @@
 
 int main()
 {
-
-    // char filename = "data\\adult.csv";
     MakeSure("data\\adult.csv"); // בדוק אם הקובץ קיים ותקין
 
     const char *DOT_PATH = "C:\\Program Files\\Graphviz\\bin\\dot.exe"; // נתיב לגרף של Graphviz
@@ -45,17 +43,16 @@ int main()
         printf("- %s\n", classes[i]);
     }
 
-    int max_depth = 0; // משתנה לשמירת העומק המקסימלי של העץ
     // בניית עץ ההחלטה מהקובץ
     printf("Building decision tree...\n");
     Node *root = NULL;
-    max_depth = build_tree(&root, file, 1, "Root");
-    printf("Decision tree built successfully with max depth: %d\n", max_depth);
-    
+    build_tree(&root, file, 1, "Root");
+
     // יצירת קובץ התחזיות לפי העץ
     printf("Writing predictions to CSV...\n");
-    write_predictions(root, "data\\adult.csv", "predictions.csv", classes);
-    system("start predictions.csv"); // פותח את הקובץ אוטומטית באקסל/Notepad
+    write_predictions(root, "data/adult.csv", "predictions.csv", classes);
+    system("start predictions.csv");  // פותח את הקובץ אוטומטית באקסל/Notepad
+
 
     // ספירת מספר עמודות ויצירת וקטור שמות תכונות (לציור העץ)
     int column_count = count_columnsfunc(file);
