@@ -3,9 +3,9 @@
 #include <string.h>
 #include "tree.h"
 #include "dataset.h"
+#include "utils.h" // כולל את trim
 
 // מחזירה את האינדקס של הערך המקסימלי במערך
-// הפונקצייה תעזור להבין איזה מחלקה אנחנו מנבעים בעץ שנוצר לנו
 int argmax(int *array, int length)
 {
     int max_index = 0;
@@ -24,7 +24,7 @@ char *predict(Node *root, char **row, char **class_names)
 
     while (!current->is_leaf)
     {
-        char *value = row[current->feature_index];
+        char *value = trim(strdup(row[current->feature_index])); // ניקוי ערכים
 
         if (current->is_numeric_split)
         {
@@ -41,30 +41,33 @@ char *predict(Node *root, char **row, char **class_names)
             else
                 current = current->right;
         }
+
+        free(value); // שחרור הזיכרון של value
     }
 
-    // הגענו לעלה – מחזירים את שם המחלקה עם הכי הרבה מופעים
     int best_index = argmax(current->labels, current->num_classes);
-    return class_names[best_index];
+    return class_names[best_index]; // לא צריך trim כאן שוב
 }
 
-// כותב תחזיות לקובץ CSV
+// כותב תחזיות לקובץ CSV כולל שורת דיוק
 void write_predictions(Node *root, const char *input_csv, const char *output_csv, char **class_names)
 {
     FILE *fin = fopen(input_csv, "r");
-    FILE *fout = fopen(output_csv, "w");
+    FILE *fout = fopen(output_csv, "w+");
 
     if (!fin || !fout)
     {
-        printf("בעיה בפתיחת קבצים.\n");
+        printf("Error opening files.\n");
         return;
     }
 
     char line[2048];
     int row_id = 0;
+    int correct_predictions = 0;
+    int total_predictions = 0;
 
-    // קריאת שורת כותרת
-    fgets(line, sizeof(line), fin);
+    fgets(line, sizeof(line), fin); // דילוג על כותרת
+    fprintf(fout, ",accuracy:           \n");
     fprintf(fout, "row_id,true_label,predicted_label\n");
 
     while (fgets(line, sizeof(line), fin))
@@ -83,20 +86,32 @@ void write_predictions(Node *root, const char *input_csv, const char *output_csv
 
         char **row = malloc(i * sizeof(char *));
         for (int j = 0; j < i; j++)
-        {
             row[j] = tokens[j];
-        }
 
-        char *true_label = row[i - 1];
-        char *predicted_label = predict(root, row, class_names);
+        // ניקוי של true ו-pred באמצעות strdup
+        char *true_label = trim(strdup(row[i - 1]));
+        char *predicted_label = trim(strdup(predict(root, row, class_names)));
 
+        if (strcmp(true_label, predicted_label) == 0)
+            correct_predictions++;
+        
+       
+        fprintf(fout, "%d,%s,%s\n", row_id + 1, true_label, predicted_label);
         row_id++;
-        fprintf(fout, "%d,%s,%s\n", row_id, true_label, predicted_label);
+        total_predictions++;
 
         free(row);
+        free(true_label);
+        free(predicted_label);
     }
 
     fclose(fin);
+
+    double accuracy = 100.0 * correct_predictions / total_predictions;
+    fseek(fout, 0, SEEK_SET);
+    fprintf(fout, ",accuracy: %.2f%%\n", accuracy);
+
     fclose(fout);
-    printf("[✔] נוצר קובץ התחזיות: %s\n", output_csv);
+    printf("Predictions written to: %s with accuracy: %.2f%%\n", output_csv, accuracy);
+    system("start \"\" \"predictions.csv\"");
 }

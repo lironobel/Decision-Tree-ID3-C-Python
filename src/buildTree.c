@@ -10,13 +10,14 @@
 // משתנים גלובליים לסטטיסטיקה
 double global_total_ig = 0.0;
 int global_ig_count = 0;
+int max_depth = 0;
 
 // פונקציה בונה עץ החלטה
 // node - מצביע לצומת הנוכחי בעץ
 // file - קובץ הנתונים
 // depth - עומק הפיצול הנוכחי
 // side - הצד הנוכחי: "Left", "Right" או "Root"
-void build_tree(Node **node, FILE *file, int depth, const char *side)
+int build_tree(Node **node, FILE *file, int depth, const char *side)
 {
     rewind(file);
 
@@ -31,7 +32,7 @@ void build_tree(Node **node, FILE *file, int depth, const char *side)
     if (class_count == 0)
     {
         printf("No classes found in the file.\n");
-        return;
+        return 0;
     }
 
     int *class_counts_for_each_class = calloc(class_count, sizeof(int));
@@ -50,8 +51,12 @@ void build_tree(Node **node, FILE *file, int depth, const char *side)
     printf("\n[INFO] Depth: %d | Side: %s | Best Gain: Column %d with Gain %.6f\n", depth, side, best_split.column_index, best_split.gain);
 
     // תנאי עצירה
-    if (best_split.gain < 0.01 || depth >= 5 || total_rows <= 10 || average_ig < 0.01 || class_count == 1)
+    if (best_split.gain < 0.01 || depth >= 50 || total_rows <= 1 || average_ig < 0.01 || class_count == 1)
     {
+        // שמירת העומק הכי גבוהה שהגענו אליו
+        if (depth > max_depth)
+            max_depth = depth;
+
         (*node)->is_leaf = 1;
         (*node)->num_classes = class_count;
         (*node)->labels = calloc(class_count, sizeof(int));
@@ -82,8 +87,10 @@ void build_tree(Node **node, FILE *file, int depth, const char *side)
     if (!left_f || !right_f)
     {
         printf("[ERROR] Failed to create filtered files.\n");
-        if (left_f) fclose(left_f);
-        if (right_f) fclose(right_f);
+        if (left_f)
+            fclose(left_f);
+        if (right_f)
+            fclose(right_f);
         remove(left_filename);
         remove(right_filename);
         goto cleanup;
@@ -133,4 +140,6 @@ cleanup:
     for (int i = 0; i < class_count; i++)
         free(list_classes[i]);
     free(list_classes);
+
+    return max_depth; // מחזיר את העומק המקסימלי שהגענו אליו
 }

@@ -253,7 +253,7 @@ SplitResult find_best_infogain(FILE *file, int column_count, int total_rows,
 
             calculate_numeric_thresholds(file, i, thresholds, &threshold_count, total_rows);
             // יוצר קפיצה של 10 בין הספים האפשריים כדי לא לעבור על כולם, ככל שתהיה קפיצה קטנה יותר יהיה יותר דיוק
-            for (int j = 0; j < threshold_count; j += 100)
+            for (int j = 0; j < threshold_count; j += 10)
             {
                 int *left_counts = calloc(class_count, sizeof(int));
                 int *right_counts = calloc(class_count, sizeof(int));
