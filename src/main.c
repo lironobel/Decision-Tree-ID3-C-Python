@@ -51,8 +51,7 @@ int main()
     // יצירת קובץ התחזיות לפי העץ
     printf("Writing predictions to CSV...\n");
     write_predictions(root, "data/adult.csv", "predictions.csv", classes);
-    system("start predictions.csv");  // פותח את הקובץ אוטומטית באקסל/Notepad
-
+    system("start predictions.csv"); // פותח את הקובץ אוטומטית באקסל/Notepad
 
     // ספירת מספר עמודות ויצירת וקטור שמות תכונות (לציור העץ)
     int column_count = count_columnsfunc(file);

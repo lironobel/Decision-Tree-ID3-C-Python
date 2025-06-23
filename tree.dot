@@ -1,0 +1,16 @@
+digraph DecisionTree {
+node [shape=ellipse, style=filled, fillcolor=white];
+node0 [label="marital-status == Married-civ-spouse"];
+node1 [label="capital-gain > 586.500"];
+node2 [label="Leaf\nClass 0: 7808 (59.34%)\nClass 1: 5349 (40.66%)\n", shape=box, style=filled, fillcolor=lightgray];
+node1 -> node2 [label="False"];
+node3 [label="Leaf\nClass 0: 1343 (73.83%)\nClass 1: 476 (26.17%)\n", shape=box, style=filled, fillcolor=lightgray];
+node1 -> node3 [label="True"];
+node0 -> node1 [label="False"];
+node4 [label="capital-gain > 57.000"];
+node5 [label="Leaf\nClass 0: 15877 (95.12%)\nClass 1: 815 (4.88%)\n", shape=box, style=filled, fillcolor=lightgray];
+node4 -> node5 [label="False"];
+node6 [label="Leaf\nClass 0: 559 (62.60%)\nClass 1: 334 (37.40%)\n", shape=box, style=filled, fillcolor=lightgray];
+node4 -> node6 [label="True"];
+node0 -> node4 [label="True"];
+}
