@@ -13,12 +13,14 @@
 
 int main()
 {
-    MakeSure("data\\adult.csv"); // בדוק אם הקובץ קיים ותקין
+
+    char Path[] = "data\\iris.csv";
+    MakeSure(Path); // בדוק אם הקובץ קיים ותקין
 
     const char *DOT_PATH = "C:\\Program Files\\Graphviz\\bin\\dot.exe"; // נתיב לגרף של Graphviz
 
     // פתיחת הקובץ
-    FILE *file = fopen("data\\adult.csv", "r");
+    FILE *file = fopen(Path, "r");
     if (!file)
     {
         printf("Failed to open CSV file.\n");
@@ -50,7 +52,7 @@ int main()
 
     // יצירת קובץ התחזיות לפי העץ
     printf("Writing predictions to CSV...\n");
-    write_predictions(root, "data/adult.csv", "predictions.csv", classes);
+    write_predictions(root, Path, "predictions.csv", classes);
     system("start predictions.csv"); // פותח את הקובץ אוטומטית באקסל/Notepad
 
     // ספירת מספר עמודות ויצירת וקטור שמות תכונות (לציור העץ)

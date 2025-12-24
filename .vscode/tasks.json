@@ -37,14 +37,53 @@
       "command": "${workspaceFolder}/build/decision_tree.exe",
       "group": {
         "kind": "test",
-        "isDefault": true
+        "isDefault": false
       },
       "problemMatcher": [],
       "detail": "Runs the decision_tree.exe",
       "dependsOn": "Build C Project",
       "options": {
         "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "Run Python ML Comparison",
+      "type": "shell",
+      "command": "python",
+      "args": [
+        "LMForComparison.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
+      "group": {
+        "kind": "test",
+        "isDefault": false
+      },
+      "problemMatcher": [],
+      "detail": "Runs Python ML comparison script"
+    },
+    {
+      "label": "Run Full Pipeline (C + Python)",
+      "type": "shell",
+      "command": "${workspaceFolder}/run_full_pipeline.bat",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "detail": "🚀 Runs complete pipeline: Build C → Run C → Python ML Comparison",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": true
+      }
     }
   ]
 }
