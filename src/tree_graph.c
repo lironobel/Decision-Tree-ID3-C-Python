@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "tree.h"
 #include "tree_graph.h"
 
@@ -8,31 +9,6 @@
  * אם זה עלה – מציגה את מספר הדוגמאות לכל מחלקה וגם את האחוזים היחסיים
  * אם זה צומת רגיל – מציגה את התנאי לפיצול (תכונה וסף או ערך קטגוריאלי)
  */
-void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_names);
-
-/*
- * פונקציה עיקרית שמייצאת את עץ ההחלטה לקובץ בפורמט DOT (גרף)
- * מתחילה את מבנה הקובץ, קוראת לפונקציה רקורסיבית להדפסת הצמתים, וסוגרת את הגרף
- */
-void export_tree_to_dot(Node *node, FILE *file, char **feature_names)
-{
-    fprintf(file, "digraph DecisionTree {\n");
-    fprintf(file, "node [shape=ellipse, style=filled, fillcolor=white];\n");
-    int id_counter = 0; // מונה ייחודי לצמתים
-    print_node_dot(node, file, &id_counter, feature_names);
-    fprintf(file, "}\n");
-}
-
-/*
- * פונקציה רקורסיבית להדפסת צומת בודד וקשתות לצמתים הבנים שלו בקובץ DOT
- *
- * אם הצומת הוא עלה:
- *   - מדפיסה את מספר הדוגמאות לכל מחלקה (class)
- *   - מחשבת את האחוז היחסי של כל מחלקה מתוך סך הכל ומוסיפה להצגה
- * אם הצומת הוא לא עלה:
- *   - מציגה את התנאי (תכונה > סף אם מספרי, או תכונה == ערך אם קטגוריאלי)
- *   - מוסיפה קשתות (חצים) לצמתים הבנים (True/False)
- */
 void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_names)
 {
     if (node == NULL)
@@ -40,16 +16,21 @@ void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_name
 
     int current_id = (*id_counter)++; // מזהה ייחודי לכל צומת
 
+    // חישוב סך כל הדוגמאות בצומת הנוכחי לצורך עיצוב
+    int total = 0;
+    for (int i = 0; i < node->num_classes; i++)
+    {
+        total += node->labels[i];
+    }
+
     if (node->is_leaf)
     {
-        fprintf(file, "node%d [label=\"Leaf\\n", current_id);
+        // קביעת צבע העלה לפי המחלקה השולטת (V2 Upgrade)
+        const char *fillcolor = "#E0E0E0"; // אפור כברירת מחדל
+        if (node->labels[1] > node->labels[0]) fillcolor = "#99FF99"; // ירוק אם רוב ל-Class 1
+        else if (node->labels[0] > node->labels[1]) fillcolor = "#FF9999"; // אדום אם רוב ל-Class 0
 
-        // חישוב סך כל הדוגמאות בעלה
-        int total = 0;
-        for (int i = 0; i < node->num_classes; i++)
-        {
-            total += node->labels[i];
-        }
+        fprintf(file, "    node%d [label=\"Leaf\\n", current_id);
 
         // הדפסת מספר הדוגמאות ואחוזים לכל מחלקה
         for (int i = 0; i < node->num_classes; i++)
@@ -58,35 +39,79 @@ void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_name
             fprintf(file, "Class %d: %d (%.2f%%)\\n", i, node->labels[i], percentage);
         }
 
-        fprintf(file, "\", shape=box, style=filled, fillcolor=lightgray];\n");
+        // הגדרת עיצוב העלה עם הצבע שנבחר
+        fprintf(file, "\", shape=box, style=filled, fillcolor=\"%s\"];\n", fillcolor);
     }
     else
     {
         const char *feature_name = feature_names[node->feature_index];
 
+        // עיצוב צומת החלטה בצורת אליפסה עם צבע כחול בהיר
         if (node->is_numeric_split)
         {
-            fprintf(file, "node%d [label=\"%s > %.3f\"];\n", current_id, feature_name, node->threshold);
+            fprintf(file, "    node%d [label=\"%s > %.3f\", shape=ellipse, style=filled, fillcolor=\"#D1E8FF\"];\n", current_id, feature_name, node->threshold);
         }
         else
         {
-            fprintf(file, "node%d [label=\"%s == %s\"];\n", current_id, feature_name, node->category_value);
+            fprintf(file, "    node%d [label=\"%s == %s\", shape=ellipse, style=filled, fillcolor=\"#D1E8FF\"];\n", current_id, feature_name, node->category_value);
         }
 
-        // הדפסת צומת שמאלי
+        // הדפסת צומת שמאלי (False) - קשת אדומה
         if (node->left)
         {
             int left_id = *id_counter;
             print_node_dot(node->left, file, id_counter, feature_names);
-            fprintf(file, "node%d -> node%d [label=\"False\"];\n", current_id, left_id);
+            fprintf(file, "    node%d -> node%d [label=\"False\", color=\"red\"];\n", current_id, left_id);
         }
 
-        // הדפסת צומת ימני
+        // הדפסת צומת ימני (True) - קשת ירוקה ועבה
         if (node->right)
         {
             int right_id = *id_counter;
             print_node_dot(node->right, file, id_counter, feature_names);
-            fprintf(file, "node%d -> node%d [label=\"True\"];\n", current_id, right_id);
+            fprintf(file, "    node%d -> node%d [label=\"True\", color=\"green\", penwidth=2];\n", current_id, right_id);
         }
     }
+}
+
+/*
+ * פונקציה עיקרית שמייצאת את עץ ההחלטה לקובץ בפורמט DOT (גרף)
+ * מתחילה את מבנה הקובץ, קוראת לפונקציה רקורסיבית להדפסת הצמתים, וסוגרת את הגרף
+ */
+void export_tree_to_dot(Node *node, FILE *file, char **feature_names)
+{
+    fprintf(file, "digraph DecisionTree {\n");
+    fprintf(file, "    graph [rankdir=TB, nodesep=0.5, ranksep=0.5, fontname=\"Arial\"];\n");
+    int id_counter = 0; 
+    print_node_dot(node, file, &id_counter, feature_names);
+    fprintf(file, "}\n");
+}
+
+/*
+ * פונקציה חדשה המבצעת אוטומציה:
+ * 1. הופכת את קובץ ה-DOT לתמונת PNG בעזרת Graphviz
+ * 2. פותחת את התמונה באופן אוטומטי לצפייה
+ */
+void generate_and_open_graph(const char *dot_filename, const char *img_filename) {
+    char command[1024]; // הגדלנו מעט את החוצץ לנתיבים ארוכים
+    
+    // הגדרת הנתיב המלא ל-EXE של Graphviz כפי שמופיע אצלך
+    const char *DOT_PATH = "C:\\Program Files\\Graphviz\\bin\\dot.exe";
+
+    // הרצת הפקודה (שימוש בגרשיים כדי לטפל ברווחים בנתיב של Program Files)
+    sprintf(command, "\"%s\" -Tpng %s -o %s", DOT_PATH, dot_filename, img_filename);
+    
+    printf("Executing: %s\n", command);
+    int result = system(command);
+    
+    if (result != 0) {
+        printf("[ERROR] Graphviz failed to generate image. Check if path is correct.\n");
+        return;
+    }
+    
+    // פתיחת הקובץ בווינדוס
+    #ifdef _WIN32
+        sprintf(command, "start %s", img_filename);
+        system(command);
+    #endif
 }
