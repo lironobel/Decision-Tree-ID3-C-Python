@@ -1,29 +1,34 @@
 # הגדרות קומפילציה
 CC = gcc
-CFLAGS = -Wall -Wextra -g3 -Iinclude
+# שים לב: שינינו ל--Isrc כדי שהקומפיילר ימצא את ה-Headers שלך
+CFLAGS = -Wall -Wextra -g3 -Isrc
 
-# קבצי המקור
-SRC = src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c src/build_tree.c
+# קבצי המקור - הוספנו את הקבצים החדשים שנוצרו ב-V2
+SRC = src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c \
+      src/buildTree.c src/tree_graph.c src/pretictedvalues.c
 
-# קובץ הפלט (הקובץ שיווצר לאחר הקומפילציה)
+# קובץ הפלט
 OUT = build/decision_tree.exe
 
 # יעד ברירת מחדל: בניית הפרויקט
-all:
-	@if not exist build mkdir build
+all: prepare
 	$(CC) $(CFLAGS) $(SRC) -o $(OUT)
 	@echo [INFO] Build completed successfully!
 
-# ניקוי קבצים ישנים (הסרת קבצי exe ישנים)
+# יצירת תיקיית build אם היא לא קיימת
+prepare:
+	@if not exist build mkdir build
+
+# ניקוי קבצים
 clean:
-	@if exist build\\*.exe del /Q build\\*.exe
+	@if exist build rmdir /s /q build
 	@echo [INFO] Clean completed!
 
-# הרצת הקוד לאחר קומפילציה (מריץ את הקובץ שהתקמפל)
+# הרצה
 run: all
 	$(OUT)
 
-# יצירת תמונה מחדש מקובץ DOT באמצעות Graphviz ופתיחה אוטומטית
+# יצירת תמונה (הפכנו לנתיב יחסי - יעבוד בכל מחשב)
 dot:
-	@dot -Tpng C:\\Users\\liron\\Desktop\\Final-project\\VScode\\Project\\Final-project\\tree.dot -o C:\\Users\\liron\\Desktop\\Final-project\\VScode\\Project\\Final-project\\tree.png
-	@start "" C:\\Users\\liron\\Desktop\\Final-project\\VScode\\Project\\Final-project\\tree.png
+	@dot -Tpng tree.dot -o tree.png
+	@start "" tree.png
