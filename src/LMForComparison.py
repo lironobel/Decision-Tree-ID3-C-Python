@@ -1,32 +1,32 @@
-import pandas as pd #ספריה לעבודה עם דאטה
-import numpy as np #ספריה לעבודה עם מערכים ומטריצות
-from sklearn.tree import DecisionTreeClassifier # ייבוא מחלקת Decision Tree מ-sklearn
-from sklearn.model_selection import train_test_split #יבוא לפיצול דאטה
-from sklearn.metrics import ( 
-    accuracy_score,   # חישוב דיוק המודל 
-    precision_score,  # חישוב דיוק חיובי
-    recall_score,     # חישוב זיהוי חיובי
-    f1_score,         # חישוב מדד F1
-    confusion_matrix, # חישוב מטריצת בלבול
-    classification_report # דוח סיווג מלא
+import pandas as pd
+import numpy as np
+from sklearn.tree import DecisionTreeClassifier, export_graphviz
+from sklearn.metrics import (
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    confusion_matrix,
+    classification_report
 )
-from sklearn.tree import export_graphviz, export_text
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
+import subprocess
+import os
 import json
+
 
 class DecisionTreeComparison:
     """
-    מחלקה להשוואת Decision Tree שנבנה ב-C עם sklearn
+    Class to compare a Decision Tree implemented in C with sklearn's Decision Tree.
     """
-    
-    # אתחול המחלקה
-    def __init__(self, csv_path, predictions_path=None): 
+
+    def __init__(self, csv_path, predictions_path="predictions.csv"):
         """
         Args:
-            csv_path: נתיב לקובץ ה-CSV המקורי
-            predictions_path: נתיב לקובץ התחזיות של האלגוריתם ב-C
+            csv_path: path to CSV dataset
+            predictions_path: path to C algorithm predictions CSV
         """
         self.csv_path = csv_path
         self.predictions_path = predictions_path
@@ -36,187 +36,159 @@ class DecisionTreeComparison:
         self.model = None
         self.y_pred_sklearn = None
         self.y_pred_c = None
-        
+
     def load_data(self):
-        """טעינת הנתונים מהקובץ"""
-        print("📂 טוען נתונים...")
+        """Load dataset from CSV"""
+        print("📂 Loading dataset...")
         self.df = pd.read_csv(self.csv_path)
-        
-        # הפרדה בין features ל-target
         self.X = self.df.iloc[:, :-1]
         self.y = self.df.iloc[:, -1]
-        
-        print(f"✅ נטענו {len(self.df)} שורות עם {len(self.X.columns)} תכונות")
-        print(f"📊 מחלקות: {self.y.unique()}")
-        print(f"📈 התפלגות מחלקות:\n{self.y.value_counts()}\n")
-        
-    def train_sklearn_tree(self, max_depth=15, min_samples_split=10, 
-                          criterion='entropy', random_state=42):
-        """
-        אימון Decision Tree עם sklearn
-        
-        Args:
-            max_depth: עומק מקסימלי של העץ
-            min_samples_split: מינימום דגימות לפיצול
-            criterion: קריטריון לפיצול (entropy/gini)
-            random_state: seed לשחזוריות
-        """
-        print("🌲 בונה Decision Tree עם sklearn...")
-        
+        print(f"✅ Loaded {len(self.df)} rows with {len(self.X.columns)} features")
+        print(f"📊 Classes: {self.y.unique()}")
+        print(f"📈 Class distribution:\n{self.y.value_counts()}\n")
+
+    def train_sklearn_tree(self, max_depth=15, min_samples_split=10, criterion='entropy', random_state=42):
+        """Train a Decision Tree using sklearn"""
+        print("🌲 Training sklearn Decision Tree...")
         self.model = DecisionTreeClassifier(
             max_depth=max_depth,
             min_samples_split=min_samples_split,
             criterion=criterion,
             random_state=random_state
         )
-        
-        # אימון על כל הדאטה (כמו שהאלגוריתם שלך עושה)
         self.model.fit(self.X, self.y)
         self.y_pred_sklearn = self.model.predict(self.X)
-        
-        print(f"✅ העץ נבנה בהצלחה!")
-        print(f"📏 עומק העץ: {self.model.get_depth()}")
-        print(f"🍃 מספר עלים: {self.model.get_n_leaves()}\n")
-        
+        print(f"✅ Tree built successfully!")
+        print(f"📏 Tree depth: {self.model.get_depth()}")
+        print(f"🍃 Number of leaves: {self.model.get_n_leaves()}\n")
+
     def load_c_predictions(self):
-        """טעינת התחזיות מהאלגוריתם ב-C"""
+        """Load predictions from C algorithm CSV"""
         if not self.predictions_path or not Path(self.predictions_path).exists():
-            print("⚠️  קובץ התחזיות לא נמצא")
+            print("⚠️ Predictions file not found")
             return False
-            
-        print("📂 טוען תחזיות מהאלגוריתם ב-C...")
+
+        print("📂 Loading C algorithm predictions...")
         pred_df = pd.read_csv(self.predictions_path, skiprows=1)
         self.y_pred_c = pred_df['predicted_label'].values
-        
-        print(f"✅ נטענו {len(self.y_pred_c)} תחזיות\n")
+        print(f"✅ Loaded {len(self.y_pred_c)} predictions\n")
         return True
-        
+
     def calculate_metrics(self, y_true, y_pred, model_name):
-        """חישוב מדדי ביצועים"""
+        """Calculate performance metrics"""
         print(f"\n{'='*60}")
-        print(f"📊 מדדי ביצועים עבור: {model_name}")
+        print(f"📊 Performance metrics for: {model_name}")
         print(f"{'='*60}")
-        
-        # Accuracy
         acc = accuracy_score(y_true, y_pred)
-        print(f"🎯 Accuracy: {acc:.4f} ({acc*100:.2f}%)")
-        
-        # Precision, Recall, F1 (weighted average)
         precision = precision_score(y_true, y_pred, average='weighted', zero_division=0)
         recall = recall_score(y_true, y_pred, average='weighted', zero_division=0)
         f1 = f1_score(y_true, y_pred, average='weighted', zero_division=0)
-        
+        print(f"🎯 Accuracy: {acc:.4f} ({acc*100:.2f}%)")
         print(f"🔍 Precision: {precision:.4f}")
         print(f"📈 Recall: {recall:.4f}")
         print(f"⚖️  F1-Score: {f1:.4f}")
-        
-        # Confusion Matrix
-        cm = confusion_matrix(y_true, y_pred)
-        print(f"\n📋 Confusion Matrix:")
-        print(cm)
-        
-        # Classification Report
-        print(f"\n📝 Classification Report:")
+        print("\n📋 Confusion Matrix:")
+        print(confusion_matrix(y_true, y_pred))
+        print("\n📝 Classification Report:")
         print(classification_report(y_true, y_pred, zero_division=0))
-        
+
         return {
             'accuracy': acc,
             'precision': precision,
             'recall': recall,
             'f1_score': f1,
-            'confusion_matrix': cm.tolist()
+            'confusion_matrix': confusion_matrix(y_true, y_pred).tolist()
         }
-        
+
     def compare_predictions(self):
-        """השוואה בין התחזיות של sklearn לבין C"""
+        """Compare sklearn predictions with C algorithm predictions"""
         if self.y_pred_c is None:
-            print("⚠️  אין תחזיות מהאלגוריתם ב-C להשוואה")
+            print("⚠️ No C predictions loaded")
             return
-            
+
         print(f"\n{'='*60}")
-        print("🔄 השוואה בין המודלים")
+        print("🔄 Comparing models")
         print(f"{'='*60}")
-        
-        # זהות בתחזיות
         matches = (self.y_pred_sklearn == self.y_pred_c).sum()
         total = len(self.y_pred_sklearn)
         agreement = matches / total
-        
-        print(f"✅ same predictions: {matches}/{total} ({agreement*100:.2f}%)")
-        print(f"❌ different predictions: {total-matches}/{total} ({(1-agreement)*100:.2f}%)")
-        
-        # השוואת דיוק מול ground truth
+        print(f"✅ Same predictions: {matches}/{total} ({agreement*100:.2f}%)")
+        print(f"❌ Different predictions: {total-matches}/{total} ({(1-agreement)*100:.2f}%)")
+
         acc_sklearn = accuracy_score(self.y, self.y_pred_sklearn)
         acc_c = accuracy_score(self.y, self.y_pred_c)
-        
         print(f"\n🎯 Accuracy sklearn: {acc_sklearn:.4f} ({acc_sklearn*100:.2f}%)")
         print(f"🎯 Accuracy C Algorithm: {acc_c:.4f} ({acc_c*100:.2f}%)")
         print(f"📊 Difference: {abs(acc_sklearn - acc_c):.4f} ({abs(acc_sklearn - acc_c)*100:.2f}%)")
-        
-        # מציאת דוגמאות עם חילוקי דעות
+
         disagreements = np.where(self.y_pred_sklearn != self.y_pred_c)[0]
         if len(disagreements) > 0:
             print(f"\n🔍 Different predictions examples (first 5):")
             for idx in disagreements[:5]:
                 print(f"  Row {idx}: sklearn={self.y_pred_sklearn[idx]}, "
                       f"C={self.y_pred_c[idx]}, true={self.y.iloc[idx]}")
-                
-    def visualize_sklearn_tree(self, feature_names=None, output_path="sklearn_tree.dot"):
-        """Visualization of sklearn tree for use with Graphviz"""
-        if self.model is None:
-            print("⚠️  The model has not been trained yet")
+
+    def generate_png_from_dot(self, dot_path="sklearn_tree.dot", output_path="sklearn_tree.png"):
+        """Generate PNG from DOT file and open it"""
+        if not os.path.exists(dot_path):
+            print(f"⚠️ DOT file {dot_path} does not exist")
             return
-            
-        print(f"\n💾 Saving sklearn tree to {output_path}...")
-        
+        command = f"dot -Tpng {dot_path} -o {output_path}"
+        try:
+            subprocess.run(command, shell=True, check=True)
+            print(f"✅ PNG created successfully: {output_path}")
+        except subprocess.CalledProcessError as e:
+            print(f"[ERROR] dot command failed with code: {e.returncode}")
+            return
+        if os.path.exists(output_path):
+            try:
+                os.startfile(output_path)
+            except AttributeError:
+                subprocess.run(["open" if os.name == "posix" else "xdg-open", output_path])
+
+    def visualize_sklearn_tree(self, feature_names=None, output_path="sklearn_tree.dot"):
+        """Export sklearn tree to DOT and generate PNG"""
+        if self.model is None:
+            print("⚠️ Model not trained yet")
+            return
         if feature_names is None:
             feature_names = self.X.columns.tolist()
-            
-        class_names = [str(c) for c in self.model.classes_]
-        
         export_graphviz(
             self.model,
             out_file=output_path,
             feature_names=feature_names,
-            class_names=class_names,
+            class_names=[str(c) for c in self.model.classes_],
             filled=True,
             rounded=True,
             special_characters=True
         )
-        
-        print("✅ DOT file created successfully!")
-        print(f"💡 Run: dot -Tpng {output_path} -o sklearn_tree.png")
-        
+        print(f"💾 DOT file saved to {output_path}")
+        self.generate_png_from_dot(output_path=output_path.replace(".dot", ".png"))
+
     def plot_confusion_matrices(self):
-        """Plot confusion matrices for comparison"""
+        """Plot confusion matrices for sklearn and C algorithm"""
         fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-        
-        # sklearn confusion matrix
-        cm_sklearn = confusion_matrix(self.y, self.y_pred_sklearn)
-        sns.heatmap(cm_sklearn, annot=True, fmt='d', cmap='Blues', 
-                   ax=axes[0], cbar=False)
+        sns.heatmap(confusion_matrix(self.y, self.y_pred_sklearn), annot=True, fmt='d', cmap='Blues',
+                    ax=axes[0], cbar=False)
         axes[0].set_title('sklearn Decision Tree')
         axes[0].set_xlabel('Predicted')
         axes[0].set_ylabel('Actual')
-        
-        # C algorithm confusion matrix
+
         if self.y_pred_c is not None:
-            cm_c = confusion_matrix(self.y, self.y_pred_c)
-            sns.heatmap(cm_c, annot=True, fmt='d', cmap='Greens',
-                       ax=axes[1], cbar=False)
+            sns.heatmap(confusion_matrix(self.y, self.y_pred_c), annot=True, fmt='d', cmap='Greens',
+                        ax=axes[1], cbar=False)
             axes[1].set_title('C Algorithm Decision Tree')
             axes[1].set_xlabel('Predicted')
             axes[1].set_ylabel('Actual')
-        
+
         plt.tight_layout()
         plt.savefig('confusion_matrix_comparison.png', dpi=300, bbox_inches='tight')
-        print("✅ Confusion matrices נשמרו ל-confusion_matrix_comparison.png")
+        print("✅ Confusion matrices saved to confusion_matrix_comparison.png")
         plt.show()
-        
+
     def export_comparison_report(self, output_path="comparison_report.json"):
-        """יצוא דוח השוואה מפורט"""
+        """Export a detailed comparison report"""
         sklearn_metrics = self.calculate_metrics(self.y, self.y_pred_sklearn, "sklearn")
-        
         report = {
             'dataset': self.csv_path,
             'n_samples': len(self.df),
@@ -226,80 +198,48 @@ class DecisionTreeComparison:
             'tree_depth': int(self.model.get_depth()),
             'n_leaves': int(self.model.get_n_leaves())
         }
-        
         if self.y_pred_c is not None:
             c_metrics = self.calculate_metrics(self.y, self.y_pred_c, "C Algorithm")
             report['c_metrics'] = c_metrics
-            
-            # השוואה
             matches = (self.y_pred_sklearn == self.y_pred_c).sum()
             report['agreement_rate'] = float(matches / len(self.y_pred_sklearn))
             report['accuracy_difference'] = float(abs(
                 sklearn_metrics['accuracy'] - c_metrics['accuracy']
             ))
-        
+
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(report, f, indent=2, ensure_ascii=False)
-            
-        print(f"\n✅ דוח השוואה נשמר ל-{output_path}")
-        
+        print(f"\n✅ Comparison report saved to {output_path}")
+
     def run_full_comparison(self):
-        """Full run of the entire comparison process"""
+        """Run the full comparison process"""
         print("🚀 Starting full comparison process...\n")
-        
-        # 1. Load data
         self.load_data()
-        
-        # 2. אימון sklearn
         self.train_sklearn_tree()
-        
-        # 3. חישוב מדדים ל-sklearn
         self.calculate_metrics(self.y, self.y_pred_sklearn, "sklearn Decision Tree")
-        
-        # 4. טעינת תחזיות C
         if self.load_c_predictions():
-            # 5. חישוב מדדים ל-C
             self.calculate_metrics(self.y, self.y_pred_c, "C Algorithm")
-            
-            # 6. השוואה בין המודלים
             self.compare_predictions()
-            
-            # 7. ציור confusion matrices
             self.plot_confusion_matrices()
-        
-        # 8. ויזואליזציה של עץ sklearn
         self.visualize_sklearn_tree()
-        
-        # 9. יצוא דוח
         self.export_comparison_report()
-        
         print("\n" + "="*60)
         print("✨ The comparison process completed successfully!")
         print("="*60)
 
 
 def main():
-    """Main function to run the comparison"""
-    
-    # Paths
+    """Main function to run comparison"""
     csv_path = "data\\iris.csv"
     predictions_path = "predictionsPYTHONLM.csv"
-    
-    # יצירת אובייקט ההשוואה
     comparator = DecisionTreeComparison(csv_path, predictions_path)
-    
-    # הרצה מלאה
-    comparator.run_full_comparison()
-    
-    # Additional statistics
-    print("\n📊 Additional statistics:") # דיווח נוסף
+    comparator.run_full_comparison() 
+    print("\n📊 Additional statistics:") # מידע סטטיסטי נוסף
     print(f"  • sklearn tree depth: {comparator.model.get_depth()}") # עומק העץ
-    print(f"  • Number of leaves: {comparator.model.get_n_leaves()}") # מספר עלים
-    print(f"  • Feature importances:") # חשיבות תכונות
-    for feat, imp in zip(comparator.X.columns, comparator.model.feature_importances_): # חשיבות תכונה
-        if imp > 0.01:  # רק features משמעותיות
+    print(f"  • Number of leaves: {comparator.model.get_n_leaves()}") # מספר העלים
+    for feat, imp in zip(comparator.X.columns, comparator.model.feature_importances_):
+        if imp > 0.01:
             print(f"    - {feat}: {imp:.4f}")
-
-
+    
 if __name__ == "__main__":
     main()

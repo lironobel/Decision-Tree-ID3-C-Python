@@ -1,0 +1,16 @@
+digraph DecisionTree {
+node [shape=ellipse, style=filled, fillcolor=white];
+node0 [label="sepal length > 4.350"];
+node1 [label="Leaf\nClass 0: 1 (100.00%)\n", shape=box, style=filled, fillcolor=lightgray];
+node0 -> node1 [label="False"];
+node2 [label="sepal length > 4.450"];
+node3 [label="Leaf\nClass 0: 3 (100.00%)\n", shape=box, style=filled, fillcolor=lightgray];
+node2 -> node3 [label="False"];
+node4 [label="sepal length > 4.550"];
+node5 [label="Leaf\nClass 0: 1 (100.00%)\n", shape=box, style=filled, fillcolor=lightgray];
+node4 -> node5 [label="False"];
+node6 [label="Leaf\nClass 0: 45 (29.61%)\nClass 1: 50 (32.89%)\nClass 2: 57 (37.50%)\n", shape=box, style=filled, fillcolor=lightgray];
+node4 -> node6 [label="True"];
+node2 -> node4 [label="True"];
+node0 -> node2 [label="True"];
+}
