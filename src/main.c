@@ -14,7 +14,7 @@
 int main()
 {
     char Path[] = "data\\iris.csv";
-    MakeSure(Path); 
+    MakeSure(Path);
 
     // פתיחת הקובץ
     FILE *file = fopen(Path, "r");
@@ -37,7 +37,10 @@ int main()
 
     // הדפסת המחלקות שנמצאו
     printf("Classes found (%d):\n", class_count);
-    for (int i = 0; i < class_count; i++) { printf("- %s\n", classes[i]); }
+    for (int i = 0; i < class_count; i++)
+    {
+        printf("- %s\n", classes[i]);
+    }
 
     // בניית עץ ההחלטה
     printf("Building decision tree...\n");
@@ -58,19 +61,20 @@ int main()
     // --- ייצוא ויזואלי של העץ (כאן השינוי המרכזי) ---
     const char *dot_filename = "tree.dot";
     const char *png_filename = "tree.png";
-    
+
     FILE *dot_file = fopen(dot_filename, "w");
     if (dot_file)
     {
         printf("Exporting colored tree to DOT...\n");
-        export_tree_to_dot(root, dot_file, feature_names_vector);
+        export_tree_to_dot(root, dot_file, feature_names_vector, classes, class_count);
         fclose(dot_file);
 
         // שימוש בפונקציה החדשה שיצרנו ב-tree_graph.c
         // היא מטפלת גם בהרצה של Graphviz וגם בפתיחת התמונה
         generate_and_open_graph(dot_filename, png_filename);
     }
-    else {
+    else
+    {
         printf("[ERROR] Could not create tree.dot\n");
     }
 
@@ -79,8 +83,14 @@ int main()
     free_tree(root);
     fclose(file);
 
-    for (int i = 0; i < column_count; i++) { free(feature_names_vector[i]); }
-    for (int i = 0; i < class_count; i++) { free(classes[i]); }
+    for (int i = 0; i < column_count; i++)
+    {
+        free(feature_names_vector[i]);
+    }
+    for (int i = 0; i < class_count; i++)
+    {
+        free(classes[i]);
+    }
     free(classes);
 
     printf("\nDone! Look at the generated tree image.\n");

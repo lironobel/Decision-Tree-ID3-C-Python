@@ -9,7 +9,7 @@
  * אם זה עלה – מציגה את מספר הדוגמאות לכל מחלקה וגם את האחוזים היחסיים
  * אם זה צומת רגיל – מציגה את התנאי לפיצול (תכונה וסף או ערך קטגוריאלי)
  */
-void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_names)
+void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_names, char **class_names, int num_classes)
 {
     if (node == NULL)
         return;
@@ -27,8 +27,10 @@ void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_name
     {
         // קביעת צבע העלה לפי המחלקה השולטת (V2 Upgrade)
         const char *fillcolor = "#E0E0E0"; // אפור כברירת מחדל
-        if (node->labels[1] > node->labels[0]) fillcolor = "#99FF99"; // ירוק אם רוב ל-Class 1
-        else if (node->labels[0] > node->labels[1]) fillcolor = "#FF9999"; // אדום אם רוב ל-Class 0
+        if (node->labels[1] > node->labels[0])
+            fillcolor = "#99FF99"; // ירוק אם רוב ל-Class 1
+        else if (node->labels[0] > node->labels[1])
+            fillcolor = "#FF9999"; // אדום אם רוב ל-Class 0
 
         fprintf(file, "    node%d [label=\"Leaf\\n", current_id);
 
@@ -36,7 +38,8 @@ void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_name
         for (int i = 0; i < node->num_classes; i++)
         {
             double percentage = (total > 0) ? (100.0 * node->labels[i] / total) : 0.0;
-            fprintf(file, "Class %d: %d (%.2f%%)\\n", i, node->labels[i], percentage);
+            const char *cname = (class_names && i < num_classes) ? class_names[i] : "?";
+            fprintf(file, "%s: %d (%.2f%%)\\n", cname, node->labels[i], percentage);
         }
 
         // הגדרת עיצוב העלה עם הצבע שנבחר
@@ -60,7 +63,7 @@ void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_name
         if (node->left)
         {
             int left_id = *id_counter;
-            print_node_dot(node->left, file, id_counter, feature_names);
+            print_node_dot(node->left, file, id_counter, feature_names, class_names, num_classes);
             fprintf(file, "    node%d -> node%d [label=\"False\", color=\"red\"];\n", current_id, left_id);
         }
 
@@ -68,7 +71,7 @@ void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_name
         if (node->right)
         {
             int right_id = *id_counter;
-            print_node_dot(node->right, file, id_counter, feature_names);
+            print_node_dot(node->right, file, id_counter, feature_names, class_names, num_classes);
             fprintf(file, "    node%d -> node%d [label=\"True\", color=\"green\", penwidth=2];\n", current_id, right_id);
         }
     }
@@ -78,12 +81,12 @@ void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_name
  * פונקציה עיקרית שמייצאת את עץ ההחלטה לקובץ בפורמט DOT (גרף)
  * מתחילה את מבנה הקובץ, קוראת לפונקציה רקורסיבית להדפסת הצמתים, וסוגרת את הגרף
  */
-void export_tree_to_dot(Node *node, FILE *file, char **feature_names)
+void export_tree_to_dot(Node *node, FILE *file, char **feature_names, char **class_names, int num_classes)
 {
     fprintf(file, "digraph DecisionTree {\n");
     fprintf(file, "    graph [rankdir=TB, nodesep=0.5, ranksep=0.5, fontname=\"Arial\"];\n");
-    int id_counter = 0; 
-    print_node_dot(node, file, &id_counter, feature_names);
+    int id_counter = 0;
+    print_node_dot(node, file, &id_counter, feature_names, class_names, num_classes);
     fprintf(file, "}\n");
 }
 
@@ -92,26 +95,28 @@ void export_tree_to_dot(Node *node, FILE *file, char **feature_names)
  * 1. הופכת את קובץ ה-DOT לתמונת PNG בעזרת Graphviz
  * 2. פותחת את התמונה באופן אוטומטי לצפייה
  */
-void generate_and_open_graph(const char *dot_filename, const char *img_filename) {
+void generate_and_open_graph(const char *dot_filename, const char *img_filename)
+{
     char command[1024]; // הגדלנו מעט את החוצץ לנתיבים ארוכים
-    
+
     // הגדרת הנתיב המלא ל-EXE של Graphviz כפי שמופיע אצלך
     const char *DOT_PATH = "C:\\Program Files\\Graphviz\\bin\\dot.exe";
 
     // הרצת הפקודה (שימוש בגרשיים כדי לטפל ברווחים בנתיב של Program Files)
     sprintf(command, "\"%s\" -Tpng %s -o %s", DOT_PATH, dot_filename, img_filename);
-    
+
     printf("Executing: %s\n", command);
     int result = system(command);
-    
-    if (result != 0) {
+
+    if (result != 0)
+    {
         printf("[ERROR] Graphviz failed to generate image. Check if path is correct.\n");
         return;
     }
-    
-    // פתיחת הקובץ בווינדוס
-    #ifdef _WIN32
-        sprintf(command, "start %s", img_filename);
-        system(command);
-    #endif
+
+// פתיחת הקובץ בווינדוס
+#ifdef _WIN32
+    sprintf(command, "start %s", img_filename);
+    system(command);
+#endif
 }

@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
+#include <math.h>
 #include "dataset.h"
 #include "utils.h"
 #include "buildTree.h"
@@ -88,6 +90,7 @@ void print_unique_values_in_column(FILE *file, int column_index)
 char **create_and_print_feature_vector(FILE *file, int column_count, int *allocated_columns)
 {
     rewind(file);
+    *allocated_columns = 0;
 
     char line[MAX_LINE_LENGTH];
     if (!fgets(line, sizeof(line), file)) // מוודא שהקובץ לא ריק או פגום לפני שמנסים לעבד אותו
@@ -118,6 +121,7 @@ char **create_and_print_feature_vector(FILE *file, int column_count, int *alloca
             return NULL;
         }
         strcpy(feature_vector[i], token);
+        trim(feature_vector[i]);
         i++;
         token = strtok(NULL, ",");
     }
@@ -128,8 +132,17 @@ char **create_and_print_feature_vector(FILE *file, int column_count, int *alloca
     }
     else
     {
+        if (*allocated_columns != column_count)
+        {
+            printf("[ERROR] Header column count mismatch. Expected: %d, Parsed: %d\n", column_count, *allocated_columns);
+            for (int j = 0; j < *allocated_columns; j++)
+                free(feature_vector[j]);
+            free(feature_vector);
+            return NULL;
+        }
+
         printf("\nFeature Vector:\n");
-        for (int i = 0; i < column_count; i++)
+        for (int i = 0; i < *allocated_columns; i++)
             printf("%d: %s\n", i + 1, feature_vector[i]);
     }
     rewind(file); // העברת המצביע של הקובץ להתחלה
@@ -153,6 +166,11 @@ int count_columnsfunc(FILE *file)
         if (line[i] == ',')
             column_count++;
     }
+    if (column_count > 0 || strchr(line, ',') != NULL)
+        column_count++;
+    else if (strcspn(line, "\r\n") > 0)
+        column_count = 1;
+
     rewind(file);
     return column_count;
 }
@@ -371,7 +389,8 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
             token = strtok(NULL, ",");
         }
 
-        if (col <= column_index) continue;
+        if (col <= column_index)
+            continue;
 
         char *value = tokens[column_index];
         value[strcspn(value, "\n\r")] = '\0';
@@ -430,18 +449,67 @@ FILE *create_temp_csv_filtered(FILE *file, int column_index, const char *match_v
     return read_file;
 }
 
+// פונקציה שמזהה אם הקובץ משתמש בפסיק, נקודה-פסיק או טאב
+static char detect_delimiter(const char *filename)
+{
+    FILE *file = fopen(filename, "r");
+    if (!file)
+        return ','; // ברירת מחדל אם הקובץ לא נפתח
 
+    char line[1024];
+    if (!fgets(line, sizeof(line), file))
+    {
+        fclose(file);
+        return ',';
+    }
 
-// פונקצייה שתרוץ בהתחלה של התהליך ותבדוק אם משהו פגום או יכול להשתבש 
+    int comma = 0, semi = 0, tab = 0;
+    for (int i = 0; line[i] != '\0'; i++)
+    {
+        if (line[i] == ',')
+            comma++;
+        else if (line[i] == ';')
+            semi++;
+        else if (line[i] == '\t')
+            tab++;
+    }
+    fclose(file);
+
+    if (semi > comma && semi > tab)
+        return ';';
+    if (tab > comma && tab > semi)
+        return '\t';
+    return ',';
+}
+#include <ctype.h>
+#include <stdbool.h>
+#include <math.h>
+
+// פונקציית עזר להפוך מחרוזת לאותיות קטנות
+static void to_lowercase(char *str)
+{
+    if (str == NULL)
+        return;
+    for (int i = 0; str[i]; i++)
+    {
+        str[i] = (char)tolower((unsigned char)str[i]);
+    }
+}
+
+// פונקצייה שתרוץ בהתחלה של התהליך ותבדוק אם משהו פגום או יכול להשתבש
 void MakeSure(const char *filename)
 {
     FILE *file = fopen(filename, "r");
+    // בדיקת פתיחת הקובץ
     if (!file)
     {
         printf("[ERROR] Failed to open file: %s\n", filename);
         exit(1);
     }
     printf("[INFO] File opened successfully: %s\n", filename);
+
+    char sep = detect_delimiter(filename);
+    char sep_str[2] = {sep, '\0'}; // הופכים את התו למחרוזת בשביל strtok
 
     // בדיקת מספר עמודות
     int column_count = count_columnsfunc(file);
@@ -497,6 +565,8 @@ void MakeSure(const char *filename)
     fgets(line, sizeof(line), file); // דילוג על כותרת
 
     bool *is_numeric_column = (bool *)calloc(column_count, sizeof(bool));
+    int warning_count = 0;
+    int error_count = 0;
     for (int i = 0; i < column_count; i++)
     {
         if (i == column_count - 1) // התעלמות מהעמודה האחרונה (המחלקה)
@@ -512,31 +582,48 @@ void MakeSure(const char *filename)
     {
         row_number++;
         int col = 0;
-        char *token = strtok(line, ",");
+        char *token = strtok(line, sep_str);
         while (token)
         {
             trim(token);
+
+            // שלב הנרמול: אם זו עמודת המחלקה, נהפוך לאותיות קטנות
+            if (col == column_count - 1)
+            {
+                to_lowercase(token);
+            }
+
             if (strlen(token) == 0)
             {
                 printf("[WARNING] Empty value at row %d, column %d.\n", row_number, col + 1);
+                warning_count++;
             }
             else if (col < column_count - 1 && is_numeric_column[col])
             {
                 // בדוק מספרים רק בעמודות שאינן עמודת המחלקה
                 char *endptr;
-                strtod(token, &endptr);
-                if (endptr == token || *endptr != '\0')
+                double value = strtod(token, &endptr);
+                if (endptr == token || *endptr != '\0' || !isfinite(value))
                 {
                     printf("[WARNING] Invalid numeric value at row %d, column %d: %s\n", row_number, col + 1, token);
+                    warning_count++;
                 }
             }
-            token = strtok(NULL, ",");
+
+            if (col == column_count - 1 && strlen(token) == 0)
+            {
+                printf("[ERROR] Empty class label at row %d.\n", row_number);
+                error_count++;
+            }
+
+            token = strtok(NULL, sep_str);
             col++;
         }
 
-        if (col < column_count)
+        if (col != column_count)
         {
-            printf("[WARNING] Row %d has fewer columns than expected. Expected: %d, Found: %d\n", row_number, column_count, col);
+            printf("[ERROR] Row %d has invalid column count. Expected: %d, Found: %d\n", row_number, column_count, col);
+            error_count++;
         }
     }
 
@@ -545,7 +632,16 @@ void MakeSure(const char *filename)
 
     for (int i = 0; i < allocated_columns; i++)
         free(feature_vector[i]);
-    
+    free(feature_vector);
+
+    if (error_count > 0)
+    {
+        printf("[ERROR] MakeSure() found %d blocking data issues.\n", error_count);
+        exit(1);
+    }
+
+    if (warning_count > 0)
+        printf("[WARNING] MakeSure() found %d non-blocking data warnings.\n", warning_count);
 
     printf("[INFO] MakeSure() checks passed. Everything looks good!\n");
 }
