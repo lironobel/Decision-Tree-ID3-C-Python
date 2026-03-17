@@ -3,3 +3,5 @@ obj/
 *.exe
 *.png
 *.dot
+*.csv
+.venv/

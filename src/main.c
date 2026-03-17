@@ -11,19 +11,50 @@
 #include "tree_graph.h"
 #include "pretictedvalues.h"
 
-int main()
+static void maybe_pause(int should_pause)
 {
-    char Path[] = "data\\iris.csv";
-    MakeSure(Path);
+    if (should_pause)
+    {
+        system("pause");
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    int should_pause = 1;
+    if (argc == 3 && strcmp(argv[2], "--no-pause") == 0)
+    {
+        should_pause = 0;
+    }
+
+    if (!(argc == 2 || argc == 3))
+    {
+        printf("ERROR: Choose a valid folder/file path.\n");
+        printf("Usage: %s [path_to_csv] [--no-pause]\n", argv[0]);
+        maybe_pause(should_pause);
+        return 1;
+    }
+
+    if (argc == 3 && strcmp(argv[2], "--no-pause") != 0)
+    {
+        printf("ERROR: Invalid optional argument. Use --no-pause\n");
+        maybe_pause(should_pause);
+        return 1;
+    }
+
+    const char *Path = argv[1];
+    printf("Using dataset: %s\n", Path);
 
     // פתיחת הקובץ
     FILE *file = fopen(Path, "r");
     if (!file)
     {
-        printf("Failed to open CSV file.\n");
-        system("pause");
-        return 0;
+        printf("ERROR: Choose a valid folder/file path.\n");
+        maybe_pause(should_pause);
+        return 1;
     }
+
+    MakeSure(Path);
 
     // קריאת המחלקות מהקובץ
     int class_count = 0;
@@ -32,6 +63,7 @@ int main()
     {
         printf("No classes found in the file.\n");
         fclose(file);
+        maybe_pause(should_pause);
         return 0;
     }
 
@@ -94,6 +126,6 @@ int main()
     free(classes);
 
     printf("\nDone! Look at the generated tree image.\n");
-    system("pause");
+    maybe_pause(should_pause);
     return 0;
 }

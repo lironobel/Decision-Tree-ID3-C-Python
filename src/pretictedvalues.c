@@ -94,8 +94,7 @@ void write_predictions(Node *root, const char *input_csv, const char *output_csv
 
         if (strcmp(true_label, predicted_label) == 0)
             correct_predictions++;
-        
-       
+
         fprintf(fout, "%d,%s,%s\n", row_id + 1, true_label, predicted_label);
         row_id++;
         total_predictions++;
@@ -113,5 +112,5 @@ void write_predictions(Node *root, const char *input_csv, const char *output_csv
 
     fclose(fout);
     printf("Predictions written to: %s with accuracy: %.2f%%\n", output_csv, accuracy);
-    system("start \"\" \"predictions.csv\"");
+    // system("start \"\" \"predictions.csv\""); // פתח את הקובץ אוטומטית
 }

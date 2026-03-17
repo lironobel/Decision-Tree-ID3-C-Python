@@ -1,6 +1,6 @@
 # C-Engine Decision Tree Classifier 🌲
 
-A high-performance Decision Tree (ID3/C4.5) engine implemented in C, featuring a modern Python-based visualization dashboard.
+A high-performance Decision Tree engine implemented in C, featuring a modern Python-based visualization dashboard.
 
 ## Key Features
 
@@ -12,6 +12,6 @@ A high-performance Decision Tree (ID3/C4.5) engine implemented in C, featuring a
 ## Tech Stack
 
 - **Backend:** C (GCC, Make)
-- **Frontend/UI:** Python (Streamlit)
+- **Frontend/UI:** Python (customtkinter)
 - **Visualization:** Graphviz
 - **Version Control:** Git

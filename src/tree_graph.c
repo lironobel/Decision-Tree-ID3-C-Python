@@ -93,7 +93,7 @@ void export_tree_to_dot(Node *node, FILE *file, char **feature_names, char **cla
 /*
  * פונקציה חדשה המבצעת אוטומציה:
  * 1. הופכת את קובץ ה-DOT לתמונת PNG בעזרת Graphviz
- * 2. פותחת את התמונה באופן אוטומטי לצפייה
+ * 2. שומרת את התמונה בלבד (ללא פתיחה אוטומטית)
  */
 void generate_and_open_graph(const char *dot_filename, const char *img_filename)
 {
@@ -114,9 +114,5 @@ void generate_and_open_graph(const char *dot_filename, const char *img_filename)
         return;
     }
 
-// פתיחת הקובץ בווינדוס
-#ifdef _WIN32
-    sprintf(command, "start %s", img_filename);
-    system(command);
-#endif
+    printf("Tree image generated: %s\n", img_filename);
 }
