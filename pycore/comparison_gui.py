@@ -160,6 +160,7 @@ class ComparisonApp(ctk.CTk):
         self.left_panel.grid_rowconfigure(6, weight=1)
         self._set_status("Ready. Select a CSV file and click 'Run Comparison'.")
 
+    # שיטה לבניית הפאנל הימני שבו יוצגו התוצאות, כולל טבלת המדדים, טבלת התחזיות ותמונות העצים
     def _build_right_panel(self):
         ctk.CTkLabel(
             self.right_panel,
@@ -229,17 +230,21 @@ class ComparisonApp(ctk.CTk):
         )
         self.c_tree_label.grid(row=1, column=1, sticky="nsew", padx=(8, 12), pady=(0, 12))
 
+    # שיטה שמעדכנת את תיבת הסטטוס עם טקסט חדש, מוחקת את הקודם ומציגה רק את ההודעה החדשה
     def _set_status(self, text):
         self.status_box.delete("1.0", "end")
         self.status_box.insert("1.0", text)
 
+    # שיטה שמוסיפה שורה חדשה לתיבת הסטטוס מבלי למחוק את הקודם, ומגלילה אוטומטית לתחתית כדי להראות את העדכון האחרון
     def _append_status(self, text):
         self.status_box.insert("end", f"\n{text}")
         self.status_box.see("end")
 
+    # שיטה שמעדכנת את התווית שמתחת לסליידר עומק כדי להראות את הערך הנבחר בזמן אמת#
     def _on_depth_change(self, _value):
         self.depth_label.configure(text=f"Selected depth: {self.depth_var.get()}")
 
+    # שיטה עיקרית שמריצה את מודל הפייתון, מריצה את ה-C, טוענת את התוצאות ומשווה ביניהם
     def browse_csv(self):
         chosen = filedialog.askopenfilename(
             title="Select CSV dataset",
@@ -249,6 +254,7 @@ class ComparisonApp(ctk.CTk):
         if chosen:
             self.csv_var.set(chosen)
 
+    # מחלקה עיקרית שמטפלת בכל הלוגיקה של טעינת הנתונים, הרצת המודלים, השוואת התוצאות ויצירת העצים הויזואליים
     def start_comparison(self):
         csv_path = Path(self.csv_var.get().strip())
         if not csv_path.exists() or csv_path.suffix.lower() != ".csv":
@@ -261,6 +267,7 @@ class ComparisonApp(ctk.CTk):
         worker = threading.Thread(target=self._run_pipeline, args=(csv_path,), daemon=True)
         worker.start()
 
+    # שיטה עיקרית שמריצה את כל תהליך ההשוואה, עם טיפול בשגיאות ועדכון הסטטוס בזמן אמת
     def _run_pipeline(self, csv_path):
         start_time = time.time()
         try:
@@ -270,14 +277,17 @@ class ComparisonApp(ctk.CTk):
             engine.load_data()
 
             self.after(0, self._append_status, "Training Python model...")
-            py_metrics = engine.train_sklearn(depth=int(self.depth_var.get()))
+            selected_depth = int(self.depth_var.get())
+            py_metrics = engine.train_sklearn(depth=selected_depth)
 
             self.after(0, self._append_status, "Running C executable...")
-            c_metrics = engine.run_c_algorithm()
+            c_metrics = engine.run_c_algorithm(depth=selected_depth)
             if c_metrics is None:
                 raise RuntimeError("C model did not produce predictions.csv")
 
             self.after(0, self._append_status, "C executable finished successfully.")
+            if engine.last_c_max_depth_reached is not None:
+                self.after(0, self._append_status, f"C max depth reached: {engine.last_c_max_depth_reached}")
             if engine.last_c_stdout:
                 first_line = engine.last_c_stdout.splitlines()[0]
                 self.after(0, self._append_status, f"C output: {first_line}")
@@ -291,32 +301,62 @@ class ComparisonApp(ctk.CTk):
             self.after(0, self._render_predictions, engine)
             self.after(0, self._render_tree_images, tree_path, str(c_tree_path))
             elapsed = time.time() - start_time
-            self.after(0, self._append_status, f"Done. Comparison completed successfully in {elapsed:.2f}s.")
         except Exception as exc:
             self.after(0, messagebox.showerror, "Comparison error", str(exc))
             self.after(0, self._append_status, f"Error: {exc}")
         finally:
             self.after(0, self._finish_run)
 
+    # שיטה עזר להצגת טבלת מדדים של שני המודלים והשוואתם, כולל אחוז ההסכמה ביניהם    
     def _render_metrics(self, py_metrics, c_metrics, comparison):
+        def fmt_accuracy_percent(value):
+            return f"{value * 100:.2f}%" if value is not None else "N/A"
+
+        def fmt_metric(value):
+            return f"{value:.4f}" if value is not None else "N/A"
+
+        def fmt_runtime(value):
+            return f"{value:.4f}" if value is not None else "N/A"
+
+        def fmt_memory(value):
+            return f"{value:.2f}" if value is not None else "N/A"
+
         rows = [
-            ["Accuracy", f"{py_metrics['accuracy']:.4f}", f"{c_metrics['accuracy']:.4f}"],
-            ["Precision", f"{py_metrics['precision']:.4f}", f"{c_metrics['precision']:.4f}"],
-            ["Recall", f"{py_metrics['recall']:.4f}", f"{c_metrics['recall']:.4f}"],
-            ["F1 Score", f"{py_metrics['f1']:.4f}", f"{c_metrics['f1']:.4f}"],
+            [
+                "Python",
+                fmt_accuracy_percent(py_metrics.get("accuracy")),
+                fmt_metric(py_metrics.get("precision")),
+                fmt_metric(py_metrics.get("recall")),
+                fmt_metric(py_metrics.get("f1")),
+                fmt_runtime(py_metrics.get("runtime_sec")),
+                fmt_memory(py_metrics.get("peak_memory_mb")),
+            ],
+            [
+                "C",
+                fmt_accuracy_percent(c_metrics.get("accuracy")),
+                fmt_metric(c_metrics.get("precision")),
+                fmt_metric(c_metrics.get("recall")),
+                fmt_metric(c_metrics.get("f1")),
+                fmt_runtime(c_metrics.get("runtime_sec")),
+                fmt_memory(c_metrics.get("peak_memory_mb")),
+            ],
         ]
 
-        if comparison:
-            rows.append(["Agreement Rate", f"{comparison['agreement_rate']:.2f}%", "-"])
-            rows.append(["Different Predictions", str(comparison["count_diff"]), "-"])
+        lines = self._format_table(
+            ["Model", "Accuracy", "Precision", "Recall", "F1 Score", "Runtime (s)", "Peak Memory (MB)"],
+            rows,
+        )
 
-        lines = self._format_table(["Metric", "Python", "C"], rows)
+        if comparison:
+            lines.append("")
+            lines.append(f"Agreement Rate (Py vs C): {comparison['agreement_rate']:.2f}%")
 
         self.metrics_box.configure(state="normal")
         self.metrics_box.delete("1.0", "end")
         self.metrics_box.insert("1.0", "\n".join(lines))
         self.metrics_box.configure(state="disabled")
 
+    # שיטה עזר להצגת טבלת התחזיות עם הדגשת התאמות ושגיאות בין שני המודלים
     def _render_predictions(self, engine):
         total_rows = min(len(engine.y_true), len(engine.y_pred_sklearn), len(engine.y_pred_c))
         rows = []
@@ -339,6 +379,7 @@ class ComparisonApp(ctk.CTk):
         self.predictions_box.insert("1.0", "\n".join(lines))
         self.predictions_box.configure(state="disabled")
 
+    # שיטה עזר לטעינת תמונת עץ והצגתה בתוך התווית המתאימה, עם טיפול בשגיאות ויצירת קישורים לתצוגה מוגדלת
     def _render_tree_images(self, python_tree_path, c_tree_path):
         self._render_single_tree_image(
             python_tree_path,
@@ -353,6 +394,7 @@ class ComparisonApp(ctk.CTk):
             "c",
         )
 
+    # שיטה עזר לטעינת תמונת עץ והצגתה בתוך התווית המתאימה, עם טיפול בשגיאות ויצירת קישורים לתצוגה מוגדלת
     def _render_single_tree_image(self, path_value, label_widget, error_text, model_type):
         path_obj = Path(path_value) if path_value else None
         if not path_obj or not path_obj.exists():
@@ -377,7 +419,8 @@ class ComparisonApp(ctk.CTk):
         )
         label_widget.configure(cursor="hand2")
 
-    def _format_table(self, headers, rows):
+    # עיצוב טבלה בסיסי להצגת מדדים ונתונים בצורה מסודרת בתוך תיבות הטקסט
+    def _format_table(self, headers, rows, separator_after=None):
         widths = [len(header) for header in headers]
         for row in rows:
             for idx, value in enumerate(row):
@@ -388,11 +431,14 @@ class ComparisonApp(ctk.CTk):
 
         separator = "+-" + "-+-".join("-" * width for width in widths) + "-+"
         table_lines = [separator, format_row(headers), separator]
-        for row in rows:
+        for idx, row in enumerate(rows, start=1):
             table_lines.append(format_row(row))
+            if separator_after and idx in separator_after:
+                table_lines.append(separator)
         table_lines.append(separator)
         return table_lines
 
+    # גרסה מינימלית של טבלת תוצאות להצגה בחלון התחזיות, עם פחות עיצוב כדי להתאים למגבלות רוחב
     def _format_table_minimal(self, headers, rows):
         widths = [len(header) for header in headers]
         for row in rows:
@@ -407,6 +453,7 @@ class ComparisonApp(ctk.CTk):
             table_lines.append(format_row(row))
         return table_lines
 
+    # לא בשימוש כרגע, אבל יכול לשמש להרחבה עתידית להצגת העץ בצורה ויזואלית בתוך האפליקציה עצמה
     def _open_image_preview(self, model_type):
         image_path = self.python_tree_preview_path if model_type == "python" else self.c_tree_preview_path
         if not image_path or not image_path.exists():
@@ -438,15 +485,18 @@ class ComparisonApp(ctk.CTk):
         self.preview_images.append(preview_img)
         preview_label.configure(image=preview_img)
 
+    # סיום הריצה - הפעלת כפתור מחדש
     def _finish_run(self):
         self.run_btn.configure(state="normal", text="Run Comparison")
 
+    # ניקוי קבצים זמניים בעת סגירת האפליקציה
     def on_close(self):
         cleanup_paths = [
             self.project_root / "tree.dot",
             self.project_root / "tree.png",
             self.project_root / "tree_viz.png",
             self.project_root / "temp.dot",
+            self.project_root / "predictions.csv",
         ]
 
         for path in cleanup_paths:

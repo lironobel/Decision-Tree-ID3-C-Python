@@ -3,9 +3,24 @@ import numpy as np
 import subprocess
 import os
 import json
+import re
+import ctypes
+import threading
+import time
 from pathlib import Path
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+
+
+def _build_subprocess_kwargs_for_silent_run():
+    """Return platform-safe subprocess kwargs that keep C execution silent on Windows."""
+    kwargs = {}
+    if os.name == "nt":
+        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+        startup_info = subprocess.STARTUPINFO()
+        startup_info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        kwargs["startupinfo"] = startup_info
+    return kwargs
 
 class DecisionTreeEngine:
     def __init__(self, csv_path, exe_path="decision_tree.exe"):
@@ -21,6 +36,11 @@ class DecisionTreeEngine:
         self.last_c_stdout = ""
         self.last_c_stderr = ""
         self.last_predictions_path = ""
+        self.last_python_runtime_sec = 0.0
+        self.last_python_peak_memory_mb = None
+        self.last_c_runtime_sec = 0.0
+        self.last_c_peak_memory_mb = None
+        self.last_c_max_depth_reached = None
 
     def load_data(self):
         """טוענת את הנתונים ומבצעת התאמה בסיסית (Preprocessing)"""
@@ -38,30 +58,73 @@ class DecisionTreeEngine:
 
     def train_sklearn(self, depth=4):
         """מאמנת את עץ ההחלטה של sklearn (המקבילה למודל ה-C)"""
-        self.model = DecisionTreeClassifier(
-            criterion='entropy', 
-            max_depth=depth, 
-            random_state=42
-        )
-        self.model.fit(self.X_processed, self.y_true)
-        self.y_pred_sklearn = self.model.predict(self.X_processed)
-        return self._get_metrics(self.y_true, self.y_pred_sklearn)
+        def sklearn_workload():
+            self.model = DecisionTreeClassifier(
+                criterion='entropy',
+                max_depth=depth,
+                random_state=42
+            )
+            self.model.fit(self.X_processed, self.y_true)
+            self.y_pred_sklearn = self.model.predict(self.X_processed)
 
-    def run_c_algorithm(self):
+        elapsed_sec, peak_memory_mb = self._measure_current_process_memory_windows(sklearn_workload)
+        self.last_python_runtime_sec = elapsed_sec
+        self.last_python_peak_memory_mb = peak_memory_mb
+        return self._get_metrics(
+            self.y_true,
+            self.y_pred_sklearn,
+            runtime_sec=self.last_python_runtime_sec,
+            peak_memory_mb=self.last_python_peak_memory_mb,
+        )
+
+    def run_c_algorithm(self, depth=4):
         """מריצה את קובץ ה-C המקומפל וטוענת את התחזיות שלו"""
         if not os.path.exists(self.exe_path):
             raise FileNotFoundError(f"לא נמצא קובץ הרצה בנתיב: {self.exe_path}")
 
-        # הרצת ה-C (שולח את ה-CSV כארגומנט)
-        result = subprocess.run(
-            [self.exe_path, self.csv_path, "--no-pause"],
-            capture_output=True,
+        # הרצת ה-C במצב core-only כדי למדוד נטו אלגוריתם ללא ויזואליזציה
+        command = [
+            self.exe_path,
+            self.csv_path,
+            "--no-pause",
+            "--no-visuals",
+            str(int(depth)),
+        ]
+        silent_subprocess_kwargs = _build_subprocess_kwargs_for_silent_run()
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
             cwd=self.project_root,
+            stdin=subprocess.DEVNULL,
+            **silent_subprocess_kwargs,
         )
-        self.last_c_stdout = result.stdout.strip()
-        self.last_c_stderr = result.stderr.strip()
-        if result.returncode != 0:
+
+        start_time = time.perf_counter()
+        baseline_memory = self._get_process_working_set_bytes(process.pid) or 0
+        peak_memory_bytes = baseline_memory
+        while process.poll() is None:
+            current_memory = self._get_process_working_set_bytes(process.pid)
+            if current_memory is not None:
+                peak_memory_bytes = max(peak_memory_bytes, current_memory)
+            time.sleep(0.02)
+
+        stdout_text, stderr_text = process.communicate()
+        end_memory = self._get_process_working_set_bytes(process.pid)
+        if end_memory is not None:
+            peak_memory_bytes = max(peak_memory_bytes, end_memory)
+
+        self.last_c_runtime_sec = time.perf_counter() - start_time
+        peak_delta_bytes = max(0, peak_memory_bytes - baseline_memory)
+        self.last_c_peak_memory_mb = (
+            peak_delta_bytes / (1024 * 1024) if peak_delta_bytes > 0 else None
+        )
+
+        self.last_c_stdout = stdout_text.strip()
+        self.last_c_stderr = stderr_text.strip()
+        self.last_c_max_depth_reached = self._extract_max_depth_reached(self.last_c_stdout)
+        if process.returncode != 0:
             stderr_text = self.last_c_stderr
             stdout_text = self.last_c_stdout
             details = stderr_text if stderr_text else stdout_text
@@ -73,8 +136,105 @@ class DecisionTreeEngine:
         if os.path.exists(predictions_path):
             pred_df = pd.read_csv(predictions_path, skiprows=1)
             self.y_pred_c = pred_df['predicted_label'].astype(str).str.strip().values
-            return self._get_metrics(self.y_true, self.y_pred_c)
+            return self._get_metrics(
+                self.y_true,
+                self.y_pred_c,
+                runtime_sec=self.last_c_runtime_sec,
+                peak_memory_mb=self.last_c_peak_memory_mb,
+            )
         return None
+
+    def _extract_max_depth_reached(self, stdout_text):
+        if not stdout_text:
+            return None
+        match = re.search(r"MAX_DEPTH_REACHED:\s*(\d+)", stdout_text)
+        if match:
+            return int(match.group(1))
+        return None
+
+    def _measure_current_process_memory_windows(self, workload):
+        """מריץ עומס עבודה ומחזיר זמן ריצה + שיא Working Set של התהליך הנוכחי (Windows)"""
+        if os.name != "nt":
+            start_time = time.perf_counter()
+            workload()
+            return time.perf_counter() - start_time, None
+
+        done = threading.Event()
+        error_holder = []
+
+        def run_workload():
+            try:
+                workload()
+            except Exception as exc:
+                error_holder.append(exc)
+            finally:
+                done.set()
+
+        current_pid = os.getpid()
+        baseline_memory = self._get_process_working_set_bytes(current_pid) or 0
+        peak_memory_bytes = baseline_memory
+        start_time = time.perf_counter()
+
+        worker = threading.Thread(target=run_workload, daemon=True)
+        worker.start()
+
+        while not done.is_set():
+            current_memory = self._get_process_working_set_bytes(current_pid)
+            if current_memory is not None:
+                peak_memory_bytes = max(peak_memory_bytes, current_memory)
+            done.wait(0.02)
+
+        worker.join()
+        end_memory = self._get_process_working_set_bytes(current_pid)
+        if end_memory is not None:
+            peak_memory_bytes = max(peak_memory_bytes, end_memory)
+
+        if error_holder:
+            raise error_holder[0]
+
+        elapsed = time.perf_counter() - start_time
+        peak_delta = max(0, peak_memory_bytes - baseline_memory)
+        peak_memory_mb = (peak_delta / (1024 * 1024)) if peak_delta > 0 else None
+        return elapsed, peak_memory_mb
+
+    def _get_process_working_set_bytes(self, pid):
+        """מחזירה Working Set נוכחי של תהליך ב-Windows, או None אם לא זמין"""
+        if os.name != "nt":
+            return None
+
+        PROCESS_QUERY_INFORMATION = 0x0400
+        PROCESS_VM_READ = 0x0010
+
+        class PROCESS_MEMORY_COUNTERS(ctypes.Structure):
+            _fields_ = [
+                ("cb", ctypes.c_ulong),
+                ("PageFaultCount", ctypes.c_ulong),
+                ("PeakWorkingSetSize", ctypes.c_size_t),
+                ("WorkingSetSize", ctypes.c_size_t),
+                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                ("PagefileUsage", ctypes.c_size_t),
+                ("PeakPagefileUsage", ctypes.c_size_t),
+            ]
+
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        psapi = ctypes.WinDLL("psapi", use_last_error=True)
+
+        process_handle = kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, False, pid)
+        if not process_handle:
+            return None
+
+        try:
+            counters = PROCESS_MEMORY_COUNTERS()
+            counters.cb = ctypes.sizeof(PROCESS_MEMORY_COUNTERS)
+            ok = psapi.GetProcessMemoryInfo(process_handle, ctypes.byref(counters), counters.cb)
+            if not ok:
+                return None
+            return int(counters.WorkingSetSize)
+        finally:
+            kernel32.CloseHandle(process_handle)
 
     def get_comparison(self):
         """משווה בין שני המודלים ומחזירה את אחוז ההסכמה ביניהם"""
@@ -156,11 +316,13 @@ class DecisionTreeEngine:
             write_node(0)
             f.write("}\n")
 
-    def _get_metrics(self, y_true, y_pred):
+    def _get_metrics(self, y_true, y_pred, runtime_sec=None, peak_memory_mb=None):
         """פונקציה פנימית לחישוב מדדים"""
         return {
             "accuracy": accuracy_score(y_true, y_pred),
             "precision": precision_score(y_true, y_pred, average='weighted', zero_division=0),
             "recall": recall_score(y_true, y_pred, average='weighted', zero_division=0),
-            "f1": f1_score(y_true, y_pred, average='weighted', zero_division=0)
+            "f1": f1_score(y_true, y_pred, average='weighted', zero_division=0),
+            "runtime_sec": runtime_sec,
+            "peak_memory_mb": peak_memory_mb,
         }

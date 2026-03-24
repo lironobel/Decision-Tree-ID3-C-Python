@@ -10,14 +10,21 @@
 // משתנים גלובליים לסטטיסטיקה
 double global_total_ig = 0.0;
 int global_ig_count = 0;
-int max_depth = 0;
+int tree_max_depth_reached = 0;
 
 // פונקציה בונה עץ החלטה
 // node - מצביע לצומת הנוכחי בעץ
 // file - קובץ הנתונים
 // depth - עומק הפיצול הנוכחי
 // side - הצד הנוכחי: "Left", "Right" או "Root"
-int build_tree(Node **node, FILE *file, int depth, const char *side)
+int build_tree(
+    Node **node,
+    FILE *file,
+    int depth,
+    const char *side,
+    int max_depth_limit,
+    char **class_names,
+    int class_count)
 {
     rewind(file);
 
@@ -27,21 +34,26 @@ int build_tree(Node **node, FILE *file, int depth, const char *side)
     int column_count = count_columnsfunc(file);
     int total_rows = count_rows(file);
 
-    int class_count = 0;
-    char **list_classes = count_classes(file, &class_count);
-    if (class_count == 0)
+    if (class_count == 0 || class_names == NULL)
     {
         printf("No classes found in the file.\n");
         return 0;
     }
 
     int *class_counts_for_each_class = calloc(class_count, sizeof(int));
-    count_rows_for_each_class(file, class_counts_for_each_class, list_classes, class_count);
+    count_rows_for_each_class(file, class_counts_for_each_class, class_names, class_count);
+
+    int active_class_count = 0;
+    for (int i = 0; i < class_count; i++)
+    {
+        if (class_counts_for_each_class[i] > 0)
+            active_class_count++;
+    }
 
     double base_entropy = entropy(class_counts_for_each_class, class_count);
 
     rewind(file);
-    SplitResult best_split = find_best_infogain(file, column_count - 1, total_rows, base_entropy, class_count, list_classes);
+    SplitResult best_split = find_best_infogain(file, column_count - 1, total_rows, base_entropy, class_count, class_names);
 
     global_total_ig += best_split.gain;
     global_ig_count++;
@@ -51,11 +63,11 @@ int build_tree(Node **node, FILE *file, int depth, const char *side)
     printf("\n[INFO] Depth: %d | Side: %s | Best Gain: Column %d with Gain %.6f\n", depth, side, best_split.column_index, best_split.gain);
 
     // תנאי עצירה
-    if (best_split.gain < 0.01 || depth >= 4 || total_rows <= 10 || average_ig < 0.01 || class_count == 1)
+    if (best_split.gain < 0.01 || depth >= max_depth_limit || total_rows <= 10 || average_ig < 0.01 || active_class_count <= 1)
     {
         // שמירת העומק הכי גבוהה שהגענו אליו
-        if (depth > max_depth)
-            max_depth = depth;
+        if (depth > tree_max_depth_reached)
+            tree_max_depth_reached = depth;
 
         (*node)->is_leaf = 1;
         (*node)->num_classes = class_count;
@@ -126,8 +138,8 @@ int build_tree(Node **node, FILE *file, int depth, const char *side)
     (*node)->right = create_node(1, NULL, 0, -1, -1.0, 1, NULL);
 
     // קריאה רקורסיבית עם עדכון הצדדים
-    build_tree(&((*node)->left), left_f, depth + 1, "Left");
-    build_tree(&((*node)->right), right_f, depth + 1, "Right");
+    build_tree(&((*node)->left), left_f, depth + 1, "Left", max_depth_limit, class_names, class_count);
+    build_tree(&((*node)->right), right_f, depth + 1, "Right", max_depth_limit, class_names, class_count);
 
     fclose(left_f);
     fclose(right_f);
@@ -137,9 +149,6 @@ int build_tree(Node **node, FILE *file, int depth, const char *side)
 cleanup:
     free(best_split.value);
     free(class_counts_for_each_class);
-    for (int i = 0; i < class_count; i++)
-        free(list_classes[i]);
-    free(list_classes);
 
-    return max_depth; // מחזיר את העומק המקסימלי שהגענו אליו
+    return tree_max_depth_reached; // מחזיר את העומק המקסימלי שהגענו אליו
 }

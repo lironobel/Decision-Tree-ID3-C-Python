@@ -1,5 +1,5 @@
  // שני פיצולים איטרטיביים
-    /*
+    
     printf("Total Rows: %d\n", count_rows(file));
     // פונקצייה שסופרת כמה עמודות שונות יש בקובץ
     int column_count = count_columnsfunc(file);
@@ -286,4 +286,4 @@
     for (int i = 0; i < allocated_columnsforLeft; i++)
         free(feature_vectorForLeft[i]);
     free(feature_vectorForLeft);
-    */
+    
