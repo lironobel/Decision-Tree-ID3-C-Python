@@ -14,7 +14,7 @@
 int main()
 {
     char Path[] = "data\\iris.csv";
-    MakeSure(Path); 
+    MakeSure(Path);
 
     // פתיחת הקובץ
     FILE *file = fopen(Path, "r");
@@ -37,12 +37,16 @@ int main()
 
     // הדפסת המחלקות שנמצאו
     printf("Classes found (%d):\n", class_count);
-    for (int i = 0; i < class_count; i++) { printf("- %s\n", classes[i]); }
+    for (int i = 0; i < class_count; i++)
+    {
+        printf("- %s\n", classes[i]);
+    }
 
     // בניית עץ ההחלטה
     printf("Building decision tree...\n");
     Node *root = NULL;
-    build_tree(&root, file, 1, "Root");
+    int max_depth_limit = 4;
+    build_tree(&root, file, 1, "Root", max_depth_limit, classes, class_count);
 
     // יצירת קובץ התחזיות
     printf("Writing predictions to CSV...\n");
@@ -58,7 +62,7 @@ int main()
     // --- ייצוא ויזואלי של העץ (כאן השינוי המרכזי) ---
     const char *dot_filename = "tree.dot";
     const char *png_filename = "tree.png";
-    
+
     FILE *dot_file = fopen(dot_filename, "w");
     if (dot_file)
     {
@@ -70,7 +74,8 @@ int main()
         // היא מטפלת גם בהרצה של Graphviz וגם בפתיחת התמונה
         generate_and_open_graph(dot_filename, png_filename);
     }
-    else {
+    else
+    {
         printf("[ERROR] Could not create tree.dot\n");
     }
 
@@ -79,8 +84,14 @@ int main()
     free_tree(root);
     fclose(file);
 
-    for (int i = 0; i < column_count; i++) { free(feature_names_vector[i]); }
-    for (int i = 0; i < class_count; i++) { free(classes[i]); }
+    for (int i = 0; i < column_count; i++)
+    {
+        free(feature_names_vector[i]);
+    }
+    for (int i = 0; i < class_count; i++)
+    {
+        free(classes[i]);
+    }
     free(classes);
 
     printf("\nDone! Look at the generated tree image.\n");
