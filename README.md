@@ -1,60 +1,76 @@
-**Overview:**
-A high-performance Decision Tree engine implemented in C from scratch, featuring a modern Python-based visualization and comparison dashboard.
-This project compares a "raw" C implementation against the industry-standard Scikit-Learn.
+# C-Engine Decision Tree Classifier
 
-# C-Engine Decision Tree Classifier 🌲
+Decision Tree classifier implemented in C (ID3/C4.5 style), with a Python layer for model comparison and visualization.
 
-A high-performance Decision Tree engine implemented in C, featuring a modern Python-based visualization dashboard.
+## Overview
 
-## Key Features
+This project combines:
 
-- **C-Core:** Custom implementation of decision tree logic from scratch.
-- **Smart Optimization:** Implemented Dynamic Binning (max 25 splits) to handle large datasets (30k+ rows) efficiently.
-- **Memory Efficient:** Manual memory management and optimized recursive structures.
-- **Interactive Studio:** A customtkinter dashboard for real-time benchmarking and visualizatio.
-- **Tree Inspector:** Export and view visual tree structures using Graphviz integration.
-- **Memory Conscious:** Optimized C structures with manual memory management to prevent leaks.
+- A custom Decision Tree engine written in C.
+- Dataset loading, entropy/information gain calculations, and recursive tree building.
+- Prediction export to CSV.
+- Python tools for comparison against scikit-learn models.
+
+## Project Structure
+
+- `src/` - C source files (core algorithm and pipeline).
+- `include/` - C headers.
+- `build/` - compiled executable output.
+- `data/` - datasets (for example: `iris.csv`, `cars.csv`, `adult.csv`).
+- `pycore/` - Python scripts (comparison and optional UI tools).
+- `predictions.csv` - model prediction output file.
+- `tree.dot` - Graphviz DOT file representation of the decision tree.
+
+## Features
+
+- Decision Tree implementation in C from scratch.
+- Manual memory management and recursive tree construction.
+- Information Gain based split selection.
+- CSV output for predictions.
+- Python-based comparison with scikit-learn.
 
 ## Tech Stack
 
-- **Backend:** C (GCC, Make)
-- **Fronted UI:** Python (customtkinter)
-- **Data Analysis:** pandas, scikit-learn, numpy
-- **Visualization:** Graphviz & Pillow
-- **Version Control:** Git
+- Backend: C (GCC)
+- Scripting and comparison: Python
+- Visualization format: Graphviz (DOT)
+- Version control: Git
 
-## Optimization Highlight
+## Build and Run
 
-In large datasets (e.g., 32,000 rows), a naive search for the best split point can be extremely slow. I implemented a Histogram-based Binning approach. By limiting the search to 25 strategic "jumps" per feature, I reduced execution time for large files from 26 seconds to less than 1 second, with minimal impact on accuracy.
+You can use the predefined VS Code tasks:
 
-## Getting Started:
+1. `Build C Project` - compiles `build/decision_tree.exe`
+2. `Run Decision Tree` - runs the C executable
+3. `Run Python ML Comparison` - runs Python comparison script
+4. `Run Full Pipeline (C + Python)` - full pipeline in one step
 
-Before running the project, ensure you have all the required Python libraries installed by - pip install -r requirements.txt.
+If you prefer manual build from terminal:
 
-Note: You also need Graphviz installed on your system to visualize the decision trees.
+```powershell
+gcc -Wall -Wextra -g3 -Iinclude src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c src/buildTree.c src/tree_graph.c src/pretictedvalues.c -o build/decision_tree.exe
+```
 
-gcc -o build/decision_tree.exe src/\*.c - in Terminal
+Then run:
 
-Run `python -m venv .venv` to create the virtual environment.
+```powershell
+./build/decision_tree.exe
+```
 
-Run `.\.venv\Scripts\Activate.ps1` to activate the virtual environment.
+## Python Comparison
 
-Launch the Dashboard: `python pycore/comparison_gui.py`
+Run from project root:
 
-## 🚀 Recent Performance Optimization (March 2026)
+```powershell
+python pycore/LMForComparison.py
+```
 
-### 1. Label Mapping & Data Integrity
+## Output Files
 
-Fixed a critical logical bug in the C-Engine where leaf nodes used local class indexing instead of a global canonical mapping.
+- `predictions.csv` - generated predictions from the C model.
+- `tree.dot` - exported decision tree graph in DOT format (can be rendered with Graphviz).
 
-- **Impact:** Resolved prediction inconsistencies, increasing model accuracy from ~70% to **96.1%**.
+## Notes
 
-### 2. Dynamic Depth Synchronization
-
-Synchronized the GUI's Max Depth slider with the C-Engine's recursive build process via CLI arguments.
-
-- **Impact:** The C model is no longer hard-coded to a depth of 4, allowing for complex tree generation (tested up to Depth 8+).
-
-### 3. Execution Logging
-
-Implemented real-time status updates in the GUI to track C-Engine execution flow and parameter passing.
+- File `src/pretictedvalues.c` keeps the current project naming and is compiled as-is.
+- This repository includes both C and Python flow to support performance and correctness comparison.
