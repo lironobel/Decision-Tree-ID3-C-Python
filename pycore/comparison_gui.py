@@ -281,7 +281,7 @@ class ComparisonApp(ctk.CTk):
             py_metrics = engine.train_sklearn(depth=selected_depth)
 
             self.after(0, self._append_status, "Running C executable...")
-            c_metrics = engine.run_c_algorithm(depth=selected_depth)
+            c_metrics = engine.run_c_algorithm(depth=selected_depth, enable_visuals=True)
             if c_metrics is None:
                 raise RuntimeError("C model did not produce predictions.csv")
 

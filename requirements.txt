@@ -1,7 +1,9 @@
-pandas // לעבודה עם נתונים 
-numpy  // לעבודה עם מערכים
-openpyxl // לעבודה עם קבצי אקסל
-scikit-learn // למידת מכונה של הפייתון
-pywin32 // למדידה של זיכרון במערכת ההפעלה 
-matplotlib // ליצירת גרפים וויזואליזציה של נתונים
+pandas
+numpy
+openpyxl
+scikit-learn
+pywin32
+matplotlib
+Pillow
+customtkinter
 

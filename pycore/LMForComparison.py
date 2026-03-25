@@ -77,7 +77,7 @@ class DecisionTreeEngine:
             peak_memory_mb=self.last_python_peak_memory_mb,
         )
 
-    def run_c_algorithm(self, depth=4):
+    def run_c_algorithm(self, depth=4, enable_visuals=False):
         """מריצה את קובץ ה-C המקומפל וטוענת את התחזיות שלו"""
         if not os.path.exists(self.exe_path):
             raise FileNotFoundError(f"לא נמצא קובץ הרצה בנתיב: {self.exe_path}")
@@ -87,9 +87,10 @@ class DecisionTreeEngine:
             self.exe_path,
             self.csv_path,
             "--no-pause",
-            "--no-visuals",
-            str(int(depth)),
         ]
+        if not enable_visuals:
+            command.append("--no-visuals")
+        command.append(str(int(depth)))
         silent_subprocess_kwargs = _build_subprocess_kwargs_for_silent_run()
         process = subprocess.Popen(
             command,

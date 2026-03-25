@@ -103,7 +103,7 @@ void generate_and_open_graph(const char *dot_filename, const char *img_filename)
     const char *DOT_PATH = "C:\\Program Files\\Graphviz\\bin\\dot.exe";
 
     // הרצת הפקודה (שימוש בגרשיים כדי לטפל ברווחים בנתיב של Program Files)
-    sprintf(command, "\"%s\" -Tpng %s -o %s", DOT_PATH, dot_filename, img_filename);
+    sprintf(command, "cmd /c \"\"%s\" -Tpng \"%s\" -o \"%s\"\"", DOT_PATH, dot_filename, img_filename);
 
     printf("Executing: %s\n", command);
     int result = system(command);

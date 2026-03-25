@@ -27,15 +27,82 @@ A high-performance Decision Tree engine implemented in C, featuring a modern Pyt
 
 In large datasets (e.g., 32,000 rows), a naive search for the best split point can be extremely slow. I implemented a Histogram-based Binning approach. By limiting the search to 25 strategic "jumps" per feature, I reduced execution time for large files from 26 seconds to less than 1 second, with minimal impact on accuracy.
 
-## Getting Started:
+## Getting Started (Windows)
 
-Before running the project, ensure you have all the required Python libraries installed by - pip install -r requirements.txt.
+Follow these steps in order:
 
-Note: You also need Graphviz installed on your system to visualize the decision trees.
+1. Install Graphviz
 
-gcc -o build/decision_tree.exe src/\*.c - in Terminal
+- Download and install Graphviz from: https://graphviz.org/download/
+- Make sure it is installed at: `C:\Program Files\Graphviz\bin\dot.exe`
 
-Launch the Dashboard: python pycore/comparison_gui.py
+2. Open terminal in project root
+
+- Folder should be the one that contains `src`, `pycore`, `build`, and `requirements.txt`.
+
+3. Create Python virtual environment
+
+```powershell
+python -m venv .venv
+```
+
+4. Activate virtual environment
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+5. Install Python dependencies
+
+```powershell
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+6. Build the C executable
+
+```powershell
+gcc -Wall -Wextra -g3 -Iinclude src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c src/buildTree.c src/tree_graph.c src/pretictedvalues.c -o build/decision_tree.exe
+```
+
+7. Run the dashboard
+
+```powershell
+python pycore/comparison_gui.py
+```
+
+8. Generate and view trees
+
+- Click `Run Comparison` in the GUI.
+- Open the `Trees` tab to view Python tree and C tree.
+
+## Common Errors & Fixes
+
+1. `ModuleNotFoundError: No module named 'PIL'`
+
+- Fix: install `Pillow`:
+
+```powershell
+python -m pip install Pillow
+```
+
+2. `ModuleNotFoundError: No module named 'pandas'`
+
+- Fix: install all dependencies:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+3. `'C:\Program' is not recognized ...`
+
+- Reason: Graphviz path/command issue on Windows.
+- Fix: make sure Graphviz is installed in `C:\Program Files\Graphviz\bin`.
+
+4. C tree image not visible in GUI
+
+- Click `Run Comparison` again and check the `Trees` tab while the app is still open.
+- Ensure C build completed successfully and `build/decision_tree.exe` exists.
 
 ## 🚀 Recent Performance Optimization (March 2026)
 
