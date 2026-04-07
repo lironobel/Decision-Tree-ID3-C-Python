@@ -3,4 +3,11 @@ obj/
 *.exe
 *.png
 *.dot
+<<<<<<< HEAD
 *.venv/
+=======
+*.csv
+.venv/
+*.tar.gz
+*.log
+>>>>>>> gui-build
