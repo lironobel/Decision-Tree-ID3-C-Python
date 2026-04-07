@@ -3,10 +3,7 @@ import numpy as np
 import subprocess
 import os
 import json
-<<<<<<< HEAD
-=======
 import re
->>>>>>> gui-build
 import ctypes
 import threading
 import time
@@ -26,12 +23,6 @@ def _build_subprocess_kwargs_for_silent_run():
     return kwargs
 
 class DecisionTreeEngine:
-<<<<<<< HEAD
-    def __init__(self, csv_path, exe_path="decision_tree.exe"):
-        self.csv_path = str(Path(csv_path).resolve())
-        self.exe_path = str(Path(exe_path).resolve())
-        self.project_root = str(Path(self.exe_path).resolve().parent.parent)
-=======
     def __init__(self, csv_path, exe_path="decision_tree.exe", work_dir=None, dot_exe_path=None):
         self.csv_path = str(Path(csv_path).resolve())
         self.exe_path = str(Path(exe_path).resolve())
@@ -42,7 +33,6 @@ class DecisionTreeEngine:
             output_dir = Path(work_dir).resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
         self.project_root = str(output_dir)
->>>>>>> gui-build
         self.df = None
         self.X_processed = None
         self.y_true = None
@@ -56,10 +46,7 @@ class DecisionTreeEngine:
         self.last_python_peak_memory_mb = None
         self.last_c_runtime_sec = 0.0
         self.last_c_peak_memory_mb = None
-<<<<<<< HEAD
-=======
         self.last_c_max_depth_reached = None
->>>>>>> gui-build
 
     def load_data(self):
         """טוענת את הנתונים ומבצעת התאמה בסיסית (Preprocessing)"""
@@ -96,21 +83,11 @@ class DecisionTreeEngine:
             peak_memory_mb=self.last_python_peak_memory_mb,
         )
 
-<<<<<<< HEAD
-    def run_c_algorithm(self, depth=4):
-=======
     def run_c_algorithm(self, depth=4, enable_visuals=False):
->>>>>>> gui-build
         """מריצה את קובץ ה-C המקומפל וטוענת את התחזיות שלו"""
         if not os.path.exists(self.exe_path):
             raise FileNotFoundError(f"לא נמצא קובץ הרצה בנתיב: {self.exe_path}")
 
-<<<<<<< HEAD
-        # הרצת ה-C (שולח את ה-CSV כארגומנט)
-        command = [self.exe_path, self.csv_path, "--no-pause", str(int(depth))]
-        start_time = time.perf_counter()
-        silent_subprocess_kwargs = _build_subprocess_kwargs_for_silent_run()
-=======
         # הרצת ה-C במצב core-only כדי למדוד נטו אלגוריתם ללא ויזואליזציה
         command = [
             self.exe_path,
@@ -127,7 +104,6 @@ class DecisionTreeEngine:
             dot_dir = str(Path(self.dot_exe_path).parent)
             child_env["PATH"] = dot_dir + os.pathsep + child_env.get("PATH", "")
 
->>>>>>> gui-build
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -135,12 +111,6 @@ class DecisionTreeEngine:
             text=True,
             cwd=self.project_root,
             stdin=subprocess.DEVNULL,
-<<<<<<< HEAD
-            **silent_subprocess_kwargs,
-        )
-
-        peak_memory_bytes = 0
-=======
             env=child_env,
             **silent_subprocess_kwargs,
         )
@@ -148,7 +118,6 @@ class DecisionTreeEngine:
         start_time = time.perf_counter()
         baseline_memory = self._get_process_working_set_bytes(process.pid) or 0
         peak_memory_bytes = baseline_memory
->>>>>>> gui-build
         while process.poll() is None:
             current_memory = self._get_process_working_set_bytes(process.pid)
             if current_memory is not None:
@@ -156,12 +125,6 @@ class DecisionTreeEngine:
             time.sleep(0.02)
 
         stdout_text, stderr_text = process.communicate()
-<<<<<<< HEAD
-
-        self.last_c_runtime_sec = time.perf_counter() - start_time
-        self.last_c_peak_memory_mb = (
-            peak_memory_bytes / (1024 * 1024) if peak_memory_bytes > 0 else None
-=======
         end_memory = self._get_process_working_set_bytes(process.pid)
         if end_memory is not None:
             peak_memory_bytes = max(peak_memory_bytes, end_memory)
@@ -170,15 +133,11 @@ class DecisionTreeEngine:
         peak_delta_bytes = max(0, peak_memory_bytes - baseline_memory)
         self.last_c_peak_memory_mb = (
             peak_delta_bytes / (1024 * 1024) if peak_delta_bytes > 0 else None
->>>>>>> gui-build
         )
 
         self.last_c_stdout = stdout_text.strip()
         self.last_c_stderr = stderr_text.strip()
-<<<<<<< HEAD
-=======
         self.last_c_max_depth_reached = self._extract_max_depth_reached(self.last_c_stdout)
->>>>>>> gui-build
         if process.returncode != 0:
             stderr_text = self.last_c_stderr
             stdout_text = self.last_c_stdout
@@ -199,8 +158,6 @@ class DecisionTreeEngine:
             )
         return None
 
-<<<<<<< HEAD
-=======
     def _extract_max_depth_reached(self, stdout_text):
         if not stdout_text:
             return None
@@ -209,7 +166,6 @@ class DecisionTreeEngine:
             return int(match.group(1))
         return None
 
->>>>>>> gui-build
     def _measure_current_process_memory_windows(self, workload):
         """מריץ עומס עבודה ומחזיר זמן ריצה + שיא Working Set של התהליך הנוכחי (Windows)"""
         if os.name != "nt":
@@ -315,16 +271,12 @@ class DecisionTreeEngine:
         self._write_custom_dot(dot_path)
 
         try:
-<<<<<<< HEAD
-            subprocess.run(["dot", "-Tpng", dot_path, "-o", output_path], check=True)
-=======
             dot_cmd = self.dot_exe_path if self.dot_exe_path and os.path.exists(self.dot_exe_path) else "dot"
             child_env = os.environ.copy()
             if self.dot_exe_path and os.path.exists(self.dot_exe_path):
                 dot_dir = str(Path(self.dot_exe_path).parent)
                 child_env["PATH"] = dot_dir + os.pathsep + child_env.get("PATH", "")
             subprocess.run([dot_cmd, "-Tpng", dot_path, "-o", output_path], check=True, env=child_env)
->>>>>>> gui-build
             return output_path
         except Exception:
             return None

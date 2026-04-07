@@ -252,16 +252,11 @@ SplitResult find_best_infogain(FILE *file, int column_count, int total_rows,
             double best_threshold = 0.0;
 
             calculate_numeric_thresholds(file, i, thresholds, &threshold_count, total_rows);
-<<<<<<< HEAD
-            int max_bins = 25;
-            int step = (threshold_count > max_bins) ? (threshold_count / max_bins) : 1;
-=======
 
             // אנחנו רוצים לבדוק מקסימום 25 נקודות פיצול, לא משנה כמה שורות יש
             int max_bins = 25;
             int step = (threshold_count > max_bins) ? (threshold_count / max_bins) : 1; // אם יש יותר מ־25 ספים, נבדוק רק כל כמה ספים כדי לא להכביד על הביצועים
             // אם יש פחות מ־25 ספים, נבדוק את כולם
->>>>>>> gui-build
             for (int j = 0; j < threshold_count; j += step)
             {
                 int *left_counts = calloc(class_count, sizeof(int));

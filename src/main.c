@@ -14,10 +14,6 @@
 
 static void maybe_pause(int should_pause)
 {
-<<<<<<< HEAD
-    char Path[] = "data\\iris.csv";
-    MakeSure(Path);
-=======
     if (should_pause)
     {
         system("pause");
@@ -90,7 +86,6 @@ int main(int argc, char *argv[])
 
     const char *Path = argv[1];
     printf("Using dataset: %s\n", Path);
->>>>>>> gui-build
 
     // פתיחת הקובץ
     FILE *file = fopen(Path, "r");
@@ -124,13 +119,8 @@ int main(int argc, char *argv[])
     // בניית עץ ההחלטה
     printf("Building decision tree...\n");
     Node *root = NULL;
-<<<<<<< HEAD
-    int max_depth_limit = 4;
-    build_tree(&root, file, 1, "Root", max_depth_limit, classes, class_count);
-=======
     int max_depth_reached = build_tree(&root, file, 1, "Root", max_depth_limit, classes, class_count);
     printf("MAX_DEPTH_REACHED: %d\n", max_depth_reached);
->>>>>>> gui-build
 
     // יצירת קובץ התחזיות
     printf("Writing predictions to CSV...\n");
@@ -141,16 +131,7 @@ int main(int argc, char *argv[])
     int allocated_columns = 0;
     char **feature_names_vector = NULL;
 
-<<<<<<< HEAD
-    // --- ייצוא ויזואלי של העץ (כאן השינוי המרכזי) ---
-    const char *dot_filename = "tree.dot";
-    const char *png_filename = "tree.png";
-
-    FILE *dot_file = fopen(dot_filename, "w");
-    if (dot_file)
-=======
     if (enable_visualization)
->>>>>>> gui-build
     {
         // ספירת עמודות ויצירת שמות תכונות
         int column_count = count_columnsfunc(file);
@@ -178,11 +159,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-<<<<<<< HEAD
-        printf("[ERROR] Could not create tree.dot\n");
-=======
         printf("Visualization skipped (--no-visuals).\n");
->>>>>>> gui-build
     }
 
     // שחרור זיכרון
@@ -190,11 +167,6 @@ int main(int argc, char *argv[])
     free_tree(root);
     fclose(file);
 
-<<<<<<< HEAD
-    for (int i = 0; i < column_count; i++)
-    {
-        free(feature_names_vector[i]);
-=======
     if (feature_names_vector != NULL)
     {
         for (int i = 0; i < allocated_columns; i++)
@@ -202,7 +174,6 @@ int main(int argc, char *argv[])
             free(feature_names_vector[i]);
         }
         free(feature_names_vector);
->>>>>>> gui-build
     }
     for (int i = 0; i < class_count; i++)
     {
