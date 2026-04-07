@@ -5,3 +5,5 @@ obj/
 *.dot
 *.csv
 .venv/
+*.tar.gz
+*.log
