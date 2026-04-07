@@ -23,10 +23,16 @@ def _build_subprocess_kwargs_for_silent_run():
     return kwargs
 
 class DecisionTreeEngine:
-    def __init__(self, csv_path, exe_path="decision_tree.exe"):
+    def __init__(self, csv_path, exe_path="decision_tree.exe", work_dir=None, dot_exe_path=None):
         self.csv_path = str(Path(csv_path).resolve())
         self.exe_path = str(Path(exe_path).resolve())
-        self.project_root = str(Path(self.exe_path).resolve().parent.parent)
+        self.dot_exe_path = str(Path(dot_exe_path).resolve()) if dot_exe_path else None
+        if work_dir is None:
+            output_dir = Path(self.exe_path).resolve().parent.parent
+        else:
+            output_dir = Path(work_dir).resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
+        self.project_root = str(output_dir)
         self.df = None
         self.X_processed = None
         self.y_true = None
@@ -92,6 +98,12 @@ class DecisionTreeEngine:
             command.append("--no-visuals")
         command.append(str(int(depth)))
         silent_subprocess_kwargs = _build_subprocess_kwargs_for_silent_run()
+        child_env = os.environ.copy()
+        if self.dot_exe_path and os.path.exists(self.dot_exe_path):
+            child_env["GRAPHVIZ_DOT"] = self.dot_exe_path
+            dot_dir = str(Path(self.dot_exe_path).parent)
+            child_env["PATH"] = dot_dir + os.pathsep + child_env.get("PATH", "")
+
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -99,6 +111,7 @@ class DecisionTreeEngine:
             text=True,
             cwd=self.project_root,
             stdin=subprocess.DEVNULL,
+            env=child_env,
             **silent_subprocess_kwargs,
         )
 
@@ -258,7 +271,12 @@ class DecisionTreeEngine:
         self._write_custom_dot(dot_path)
 
         try:
-            subprocess.run(["dot", "-Tpng", dot_path, "-o", output_path], check=True)
+            dot_cmd = self.dot_exe_path if self.dot_exe_path and os.path.exists(self.dot_exe_path) else "dot"
+            child_env = os.environ.copy()
+            if self.dot_exe_path and os.path.exists(self.dot_exe_path):
+                dot_dir = str(Path(self.dot_exe_path).parent)
+                child_env["PATH"] = dot_dir + os.pathsep + child_env.get("PATH", "")
+            subprocess.run([dot_cmd, "-Tpng", dot_path, "-o", output_path], check=True, env=child_env)
             return output_path
         except Exception:
             return None

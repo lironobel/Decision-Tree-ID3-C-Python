@@ -99,18 +99,22 @@ void generate_and_open_graph(const char *dot_filename, const char *img_filename)
 {
     char command[1024]; // הגדלנו מעט את החוצץ לנתיבים ארוכים
 
-    // הגדרת הנתיב המלא ל-EXE של Graphviz כפי שמופיע אצלך
-    const char *DOT_PATH = "C:\\Program Files\\Graphviz\\bin\\dot.exe";
+    // אם קיים GRAPHVIZ_DOT נשתמש בו, אחרת ננסה dot מה-PATH
+    const char *dot_path = getenv("GRAPHVIZ_DOT");
+    if (dot_path == NULL || dot_path[0] == '\0')
+    {
+        dot_path = "dot";
+    }
 
-    // הרצת הפקודה (שימוש בגרשיים כדי לטפל ברווחים בנתיב של Program Files)
-    sprintf(command, "cmd /c \"\"%s\" -Tpng \"%s\" -o \"%s\"\"", DOT_PATH, dot_filename, img_filename);
+    // הרצת הפקודה (שימוש בגרשיים כדי לטפל ברווחים)
+    snprintf(command, sizeof(command), "cmd /c \"\"%s\" -Tpng \"%s\" -o \"%s\"\"", dot_path, dot_filename, img_filename);
 
     printf("Executing: %s\n", command);
     int result = system(command);
 
     if (result != 0)
     {
-        printf("[ERROR] Graphviz failed to generate image. Check if path is correct.\n");
+        printf("[ERROR] Graphviz failed to generate image. Check GRAPHVIZ_DOT or PATH.\n");
         return;
     }
 

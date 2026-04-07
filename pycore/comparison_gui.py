@@ -1,26 +1,74 @@
+import os
+import shutil
+import sys
 import threading
 from pathlib import Path
 import time
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
+
 import customtkinter as ctk
 from PIL import Image
+
+
+def _prepare_tk_runtime_for_frozen_app():
+    """In onefile builds, avoid picking Graphviz Tcl 8.6.10 from system PATH."""
+    if not getattr(sys, "frozen", False):
+        return
+
+    mei_base = getattr(sys, "_MEIPASS", None)
+    if mei_base:
+        tcl_dir = Path(mei_base) / "_tcl_data"
+        tk_dir = Path(mei_base) / "_tk_data"
+        if tcl_dir.exists():
+            os.environ["TCL_LIBRARY"] = str(tcl_dir)
+        if tk_dir.exists():
+            os.environ["TK_LIBRARY"] = str(tk_dir)
+
+    path_value = os.environ.get("PATH", "")
+    if not path_value:
+        return
+
+    # Remove system Graphviz bin from DLL search order to prevent Tcl mismatch.
+    filtered_parts = []
+    for part in path_value.split(os.pathsep):
+        if "graphviz" in part.lower() and "bin" in part.lower():
+            continue
+        filtered_parts.append(part)
+    os.environ["PATH"] = os.pathsep.join(filtered_parts)
+
+
+_prepare_tk_runtime_for_frozen_app()
 
 try:
     from .LMForComparison import DecisionTreeEngine
 except ImportError:
     from LMForComparison import DecisionTreeEngine
 
+def resource_path(relative_path):
+    """ קבלת נתיב אבסולוטי לקבצים, עובד גם בפיתוח וגם ב-EXE """
+    try:
+        # PyInstaller יוצר תיקייה זמנית ושומר את הנתיב ב-sys._MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
+    
 class ComparisonApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.project_root = Path(__file__).resolve().parent.parent 
-        self.default_csv = self.project_root / "data" / "iris.csv" # נתיב ברירת המחדל לקובץ ה-CSV
-        self.exe_path = self.project_root / "build" / "decision_tree.exe" # נתיב ברירת המחדל לקובץ ה-C המהודר
-        self.tree_img_path = self.project_root / "tree_viz.png" # נתיב לתמונה שתיווצר עבור עץ ההחלטה של הפייתון
+        # נתיב הבסיס להרצה רגילה
+        self.project_root = Path(os.path.abspath(".")).resolve()
+        self.runtime_output_dir = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "DecisionTreeStudio"
+        self.runtime_output_dir.mkdir(parents=True, exist_ok=True)
+        self.default_csv = resource_path("data/iris.csv") # נתיב ברירת המחדל לקובץ ה-CSV
+        self.exe_path = resource_path("build/decision_tree.exe") # נתיב ברירת המחדל לקובץ ה-C המהודר
+        self.dot_exe_path = self._resolve_dot_executable()
+        self.tree_img_path = self.runtime_output_dir / "tree_viz.png" # נתיב לתמונה שתיווצר עבור עץ ההחלטה של הפייתון
+        self.c_tree_img_path = self.runtime_output_dir / "tree.png"
         self.current_python_tree_image = None
         self.current_c_tree_image = None
         self.python_tree_preview_path = None
@@ -271,7 +319,12 @@ class ComparisonApp(ctk.CTk):
     def _run_pipeline(self, csv_path):
         start_time = time.time()
         try:
-            engine = DecisionTreeEngine(str(csv_path), exe_path=str(self.exe_path))
+            engine = DecisionTreeEngine(
+                str(csv_path),
+                exe_path=str(self.exe_path),
+                work_dir=str(self.runtime_output_dir),
+                dot_exe_path=self.dot_exe_path,
+            )
             self.after(0, self._append_status, f"Dataset: {csv_path.name}")
             self.after(0, self._append_status, "Loading data...")
             engine.load_data()
@@ -292,10 +345,14 @@ class ComparisonApp(ctk.CTk):
                 first_line = engine.last_c_stdout.splitlines()[0]
                 self.after(0, self._append_status, f"C output: {first_line}")
             self.after(0, self._append_status, f"Predictions file: {engine.last_predictions_path}")
+            if self.dot_exe_path:
+                self.after(0, self._append_status, f"Graphviz dot: {self.dot_exe_path}")
+            else:
+                self.after(0, self._append_status, "Graphviz dot not found (images may fail).")
 
             comparison = engine.get_comparison()
             tree_path = engine.generate_visual_tree(output_path=str(self.tree_img_path))
-            c_tree_path = self.project_root / "tree.png"
+            c_tree_path = self.c_tree_img_path
 
             self.after(0, self._render_metrics, py_metrics, c_metrics, comparison)
             self.after(0, self._render_predictions, engine)
@@ -492,11 +549,11 @@ class ComparisonApp(ctk.CTk):
     # ניקוי קבצים זמניים בעת סגירת האפליקציה
     def on_close(self):
         cleanup_paths = [
-            self.project_root / "tree.dot",
-            self.project_root / "tree.png",
-            self.project_root / "tree_viz.png",
-            self.project_root / "temp.dot",
-            self.project_root / "predictions.csv",
+            self.runtime_output_dir / "tree.dot",
+            self.runtime_output_dir / "tree.png",
+            self.runtime_output_dir / "tree_viz.png",
+            self.runtime_output_dir / "temp.dot",
+            self.runtime_output_dir / "predictions.csv",
         ]
 
         for path in cleanup_paths:
@@ -520,6 +577,17 @@ class ComparisonApp(ctk.CTk):
                         pass
 
         self.destroy()
+
+    def _resolve_dot_executable(self):
+        bundled_dot = Path(resource_path("graphviz/bin/dot.exe"))
+        if bundled_dot.exists():
+            return str(bundled_dot)
+
+        system_dot = shutil.which("dot")
+        if system_dot:
+            return system_dot
+
+        return None
 
 
 if __name__ == "__main__":
