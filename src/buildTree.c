@@ -134,6 +134,17 @@ int build_tree(
     (*node)->is_numeric_split = best_split.is_numeric;
     (*node)->category_value = best_split.is_numeric ? NULL : strdup(best_split.value);
 
+    // עדכון labels של צומת split עם התפלגות המחלקות הנוכחית
+    (*node)->num_classes = class_count;
+    (*node)->labels = calloc(class_count, sizeof(int));
+    if (!(*node)->labels)
+    {
+        perror("calloc failed");
+        exit(1);
+    }
+    for (int i = 0; i < class_count; i++)
+        (*node)->labels[i] = class_counts_for_each_class[i];
+
     (*node)->left = create_node(1, NULL, 0, -1, -1.0, 1, NULL);
     (*node)->right = create_node(1, NULL, 0, -1, -1.0, 1, NULL);
 

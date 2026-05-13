@@ -18,7 +18,7 @@ A high-performance Decision Tree engine implemented in C, featuring a modern Pyt
 ## Tech Stack
 
 - **Backend:** C (GCC, Make)
-- **Fronted UI:** Python (customtkinter)
+- **Fronted UI:** Python
 - **Data Analysis:** pandas, scikit-learn, numpy
 - **Visualization:** Graphviz & Pillow
 - **Version Control:** Git

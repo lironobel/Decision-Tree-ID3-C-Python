@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "tree.h"
 #include "tree_graph.h"
 
@@ -39,7 +40,7 @@ void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_name
         {
             double percentage = (total > 0) ? (100.0 * node->labels[i] / total) : 0.0;
             const char *cname = (class_names && i < num_classes) ? class_names[i] : "?";
-            fprintf(file, "%s: %d (%.2f%%)\\n", cname, node->labels[i], percentage);
+            fprintf(file, "%s: %.2f%% (%d/%d)\\n", cname, percentage, node->labels[i], total);
         }
 
         // הגדרת עיצוב העלה עם הצבע שנבחר
@@ -49,14 +50,23 @@ void print_node_dot(Node *node, FILE *file, int *id_counter, char **feature_name
     {
         const char *feature_name = feature_names[node->feature_index];
 
-        // עיצוב צומת החלטה בצורת אליפסה עם צבע כחול בהיר
+        // עיצוב צומת החלטה בצורת אליפסה עם צבע כחול בהיר, כולל סך הדגימות ותפלגות המחלקות
+        char class_dist[512] = "";
+        for (int i = 0; i < node->num_classes; i++)
+        {
+            char class_info[64];
+            const char *cname = (class_names && i < num_classes) ? class_names[i] : "?";
+            snprintf(class_info, sizeof(class_info), "%s%s: %d", i > 0 ? " | " : "", cname, node->labels[i]);
+            strncat(class_dist, class_info, sizeof(class_dist) - strlen(class_dist) - 1);
+        }
+
         if (node->is_numeric_split)
         {
-            fprintf(file, "    node%d [label=\"%s > %.3f\", shape=ellipse, style=filled, fillcolor=\"#D1E8FF\"];\n", current_id, feature_name, node->threshold);
+            fprintf(file, "    node%d [label=\"%s > %.3f\\nNumber of samples: %d\\n%s\", shape=ellipse, style=filled, fillcolor=\"#D1E8FF\"];\n", current_id, feature_name, node->threshold, total, class_dist);
         }
         else
         {
-            fprintf(file, "    node%d [label=\"%s == %s\", shape=ellipse, style=filled, fillcolor=\"#D1E8FF\"];\n", current_id, feature_name, node->category_value);
+            fprintf(file, "    node%d [label=\"%s == %s\\nNumber of samples: %d\\n%s\", shape=ellipse, style=filled, fillcolor=\"#D1E8FF\"];\n", current_id, feature_name, node->category_value, total, class_dist);
         }
 
         // הדפסת צומת שמאלי (False) - קשת אדומה

@@ -309,8 +309,9 @@ class DecisionTreeEngine:
 
                     parts = [f"Leaf: {predicted_class}"]
                     for i, cls_name in enumerate(class_names):
+                        count = int(values[i])
                         pct = (100.0 * values[i] / total) if total > 0 else 0.0
-                        parts.append(f"{cls_name}: {pct:.2f}%")
+                        parts.append(f"{cls_name}: {pct:.2f}% ({count}/{int(total)})")
 
                     label = "\\n".join(parts)
                     f.write(
@@ -321,7 +322,12 @@ class DecisionTreeEngine:
                 feature_idx = tree.feature[node_id]
                 threshold = tree.threshold[node_id]
                 feature_name = feature_names[feature_idx]
-                question = f"{feature_name} <= {threshold:.3f}"
+                n_samples = tree.n_node_samples[node_id]
+                values = tree.value[node_id][0]
+                
+                # בנייה של תווית עם התפלגות המחלקות
+                class_dist = " | ".join([f"{class_names[i]}: {int(values[i])}" for i in range(len(class_names))])
+                question = f"{feature_name} <= {threshold:.3f}\\n(Number of samples={n_samples})\\n{class_dist}"
                 f.write(
                     f"    node{node_id} [label=\"{question}\", shape=ellipse, style=filled, fillcolor=\"#DDEFFF\"];\n"
                 )
