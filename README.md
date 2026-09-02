@@ -1,24 +1,19 @@
-**Overview:**
-A high-performance Decision Tree engine implemented in C from scratch, featuring a modern Python-based visualization and comparison dashboard.
-This project compares a "raw" C implementation against the industry-standard Scikit-Learn.
-
 # C-Engine Decision Tree Classifier 🌲
 
-A high-performance Decision Tree engine implemented in C, featuring a modern Python-based visualization dashboard.
+A high-performance Decision Tree engine implemented in C from scratch, benchmarked against scikit-learn, with a Python visualizationn dashboard.
 
 ## Key Features
 
 - **C-Core:** Custom implementation of decision tree logic from scratch.
 - **Smart Optimization:** Implemented Dynamic Binning (max 25 splits) to handle large datasets (30k+ rows) efficiently.
 - **Memory Efficient:** Manual memory management and optimized recursive structures.
-- **Interactive Studio:** A customtkinter dashboard for real-time benchmarking and visualizatio.
+- **Interactive Studio:** A customtkinter dashboard for real-time benchmarking and visualization.
 - **Tree Inspector:** Export and view visual tree structures using Graphviz integration.
-- **Memory Conscious:** Optimized C structures with manual memory management to prevent leaks.
 
 ## Tech Stack
 
 - **Backend:** C (GCC, Make)
-- **Fronted UI:** Python
+- **Frontend UI:** Python
 - **Data Analysis:** pandas, scikit-learn, numpy
 - **Visualization:** Graphviz & Pillow
 - **Version Control:** Git
@@ -104,7 +99,7 @@ python -m pip install -r requirements.txt
 - Click `Run Comparison` again and check the `Trees` tab while the app is still open.
 - Ensure C build completed successfully and `build/decision_tree.exe` exists.
 
-## 🚀 Recent Performance Optimization (March 2026)
+## 🚀## Engineering Highlights (March 2026)
 
 ### 1. Label Mapping & Data Integrity
 
@@ -121,4 +116,4 @@ Synchronized the GUI's Max Depth slider with the C-Engine's recursive build proc
 ### 3. Execution Logging
 
 Implemented real-time status updates in the GUI to track C-Engine execution flow and parameter passing.
-..
+
