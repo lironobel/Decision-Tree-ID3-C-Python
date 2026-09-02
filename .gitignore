@@ -7,3 +7,5 @@ obj/
 .venv/
 *.tar.gz
 *.logg
+.pyc
+.vscode

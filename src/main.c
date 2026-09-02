@@ -10,7 +10,7 @@
 #include "tree.h"
 #include "buildTree.h"
 #include "tree_graph.h"
-#include "pretictedvalues.h"
+#include "predictedvalues.h"
 
 static void maybe_pause(int should_pause)
 {

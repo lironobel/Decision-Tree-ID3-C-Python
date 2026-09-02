@@ -10,7 +10,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        "Get-Process decision_tree -ErrorAction SilentlyContinue | Stop-Process -Force; gcc -Wall -Wextra -g3 -Iinclude src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c src/buildTree.c src/tree_graph.c src/pretictedvalues.c -o build/decision_tree.exe"
+        "Get-Process decision_tree -ErrorAction SilentlyContinue | Stop-Process -Force; gcc -Wall -Wextra -g3 -Iinclude src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c src/buildTree.c src/tree_graph.c src/predictedvalues.c -o build/decision_tree.exe"
       ],
       "options": {
         "cwd": "${workspaceFolder}"

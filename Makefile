@@ -5,7 +5,7 @@ CFLAGS = -Wall -Wextra -g3 -Isrc
 
 # קבצי המקור - הוספנו את הקבצים החדשים שנוצרו ב-V2
 SRC = src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c \
-      src/buildTree.c src/tree_graph.c src/pretictedvalues.c
+      src/buildTree.c src/tree_graph.c src/predictedvalues.c
 
 # קובץ הפלט
 OUT = build/decision_tree.exe

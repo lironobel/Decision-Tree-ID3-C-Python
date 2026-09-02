@@ -57,7 +57,7 @@ python -m pip install -r requirements.txt
 6. Build the C executable
 
 ```powershell
-gcc -Wall -Wextra -g3 -Iinclude src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c src/buildTree.c src/tree_graph.c src/pretictedvalues.c -o build/decision_tree.exe
+gcc -Wall -Wextra -g3 -Iinclude src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c src/buildTree.c src/tree_graph.c src/predictedvalues.c -o build/decision_tree.exe
 ```
 
 7. Run the dashboard
