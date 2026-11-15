@@ -1,6 +1,6 @@
 # C-Engine Decision Tree Classifier 🌲
 
-A high-performance Decision Tree engine implemented in C from scratch, benchmarked against scikit-learn, with a Python visualizationn dashboard.
+A high-performance Decision Tree engine implemented in C from scratch, benchmarked against scikit-learn, with a Python visualization dashboard.
 
 ## Key Features
 
@@ -33,7 +33,7 @@ Follow these steps in order:
 
 2. Open terminal in project root
 
-- Folder should be the one that contains `src`, `pycore`, `build`, and `requirements.txt`.
+- Folder should be the one that contains `src`, `pycore`, and `requirements.txt`.
 
 3. Create Python virtual environment
 
@@ -57,6 +57,7 @@ python -m pip install -r requirements.txt
 6. Build the C executable
 
 ```powershell
+mkdir build
 gcc -Wall -Wextra -g3 -Iinclude src/main.c src/dataset.c src/infogain.c src/utils.c src/tree.c src/buildTree.c src/tree_graph.c src/predictedvalues.c -o build/decision_tree.exe
 ```
 
@@ -99,7 +100,7 @@ python -m pip install -r requirements.txt
 - Click `Run Comparison` again and check the `Trees` tab while the app is still open.
 - Ensure C build completed successfully and `build/decision_tree.exe` exists.
 
-## 🚀## Engineering Highlights (March 2026)
+## 🚀 Engineering Highlights (March 2026)
 
 ### 1. Label Mapping & Data Integrity
 
