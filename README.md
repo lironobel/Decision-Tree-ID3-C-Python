@@ -72,6 +72,16 @@ python pycore/comparison_gui.py
 - Click `Run Comparison` in the GUI.
 - Open the `Trees` tab to view Python tree and C tree.
 
+## Building the standalone .exe (optional)
+
+`comparison_gui.spec` bundles a portable Graphviz into the executable. The Graphviz binaries are no longer stored in this repository (they were ~17 MB of DLLs). To build the `.exe`, copy the `bin` folder of your Graphviz installation to `.pack/graphviz_bin` (this folder is git-ignored), then run:
+
+```powershell
+pyinstaller comparison_gui.spec
+```
+
+For normal development you do not need this: the dashboard uses the system-installed `dot.exe` from step 1.
+
 ## Common Errors & Fixes
 
 1. `ModuleNotFoundError: No module named 'PIL'`
